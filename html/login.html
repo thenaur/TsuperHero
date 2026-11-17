@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TsuperHero - Log In</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1d2b53;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #2b3a6b;
+      padding: 1.5rem;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .tabs {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tabs button {
+      flex: 1;
+    }
+
+    button,
+    input {
+      font-size: 1.1rem;
+      padding: .7rem;
+      border-radius: 8px;
+      border: 0;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: .6rem;
+    }
+
+    button {
+      background: #ffcc00;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tabs button {
+      margin-top: 0;
+      background: #556;
+      color: #fff;
+    }
+
+    .tabs button.active {
+      background: #ffcc00;
+      color: #000;
+    }
+
+    #msg {
+      min-height: 1.5rem;
+      margin-top: .8rem;
+      color: #ff9aa2;
+    }
+
+    #msg.ok {
+      color: #9affb0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>TsuperHero</h1>
+
+    <div id="auth-view">
+      <div class="tabs">
+        <button id="tab-login" class="active" type="button">Log In</button>
+        <button id="tab-signup" type="button">Sign Up</button>
+      </div>
+      <form id="form" autocomplete="off">
+        <input id="nick" placeholder="Nickname" maxlength="12" required>
+        <input id="pin" placeholder="4-digit PIN" type="password" inputmode="numeric" maxlength="4" required>
+        <button id="submit" type="submit">Log In</button>
+      </form>
+    </div>
+
+    <div id="home-view" hidden>
+      <p>Welcome, <b id="who"></b>!</p>
+      <p>Levels completed: <span id="levels"></span> &middot; Stars: <span id="stars"></span></p>
+      <button id="logout" type="button">Log Out</button>
+    </div>
+
+    <div id="msg"></div>
+  </div>
+
+  <script type="module">
+    import { isConfigured } from "../js/firebase-config.js";
+    import { signUp, logIn, logOut, friendlyError } from "../js/auth.js";
+
+    const $ = (id) => document.getElementById(id);
+    let mode = "login";
+    let session = null; // { uid, profile }
+
+    function say(text, ok = false) { $("msg").textContent = text; $("msg").className = ok ? "ok" : ""; }
+
+    function setMode(m) {
+      mode = m;
+      $("tab-login").classList.toggle("active", m === "login");
+      $("tab-signup").classList.toggle("active", m === "signup");
+      $("submit").textContent = m === "login" ? "Log In" : "Sign Up";
+      say("");
+    }
+    $("tab-login").onclick = () => setMode("login");
+    $("tab-signup").onclick = () => setMode("signup");
+
+    function showHome() {
+      $("auth-view").hidden = true;
+      $("home-view").hidden = false;
+      $("who").textContent = session.profile.nickname;
+      $("levels").textContent = session.profile.levelsCompleted;
+      $("stars").textContent = session.profile.stars;
+    }
+
+    $("form").onsubmit = async (e) => {
+      e.preventDefault();
+      if (!isConfigured) return say("Add your Firebase config in js/firebase-config.js first.");
+      $("submit").disabled = true;
+      say("Please wait...", true);
+      try {
+        const fn = mode === "login" ? logIn : signUp;
+        session = await fn($("nick").value.trim(), $("pin").value);
+        say("");
+        showHome();
+      } catch (err) {
+        say(err.code === "app/invalid-input" ? err.message : friendlyError(err));
+      } finally {
+        $("submit").disabled = false;
+      }
+    };
+
+    $("logout").onclick = async () => {
+      await logOut(session && session.profile);
+      session = null;
+      $("form").reset();
+      $("home-view").hidden = true;
+      $("auth-view").hidden = false;
+      say("Logged out.", true);
+    };
+  </script>
+</body>
+
+</html>
