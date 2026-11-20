@@ -1,30 +1,9 @@
 // Saved progress: one Firestore document per user at users/{uid}.
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase-config.js";
+import { defaultProfile, normalizeProfile } from "./profile.js";
 
-export function defaultProfile(nickname) {
-  return {
-    nickname,
-    levelsCompleted: 0,
-    tutorialDone: false,
-    endlessUnlocked: false,
-    bestScore: { easy: 0, medium: 0, hard: 0 },
-    stars: 0,
-    unlocked: ["scenery1"],
-    equipped: { scenery: "scenery1" },
-  };
-}
-
-// Fills in any missing fields so older saves keep working as the profile grows.
-function withDefaults(data, nickname) {
-  const base = defaultProfile(nickname);
-  return {
-    ...base,
-    ...data,
-    bestScore: { ...base.bestScore, ...(data.bestScore || {}) },
-    equipped: { ...base.equipped, ...(data.equipped || {}) },
-  };
-}
+export { defaultProfile };
 
 // Create the starting document for a brand-new account.
 export async function createProfile(uid, nickname) {
@@ -37,7 +16,7 @@ export async function createProfile(uid, nickname) {
 export async function loadProfile(uid, nickname) {
   const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return createProfile(uid, nickname);
-  return withDefaults(snap.data(), nickname);
+  return normalizeProfile(snap.data(), nickname);
 }
 
 // Call after a level, when Endless ends, on unlock, and on logout.
