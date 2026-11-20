@@ -1,5 +1,5 @@
-// Main controller for the playable prototype (Tutorial + Level 1).
-import { STAGES, VERSION } from './data.js';
+// Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js';
 import { fitStage } from './layout.js';
 import { Emitter } from './emitter.js';
 import { Play } from './play.js';
@@ -7,7 +7,7 @@ import { TutorialGuide } from './tutorial.js';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { init as initProgress, save as saveProgress, getProfile, getState } from './progress.js';
-import { applyTutorialDone, applyLevelComplete } from './progress-rules.js';
+import { applyTutorialDone, applyLevelComplete, applyEndlessResult } from './progress-rules.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -28,12 +28,17 @@ function startStage(stageId) {
   $('modal-postgame').hidden = true;
   $('modal-menu').hidden = true;
 
-  const stage = STAGES[stageId];
+  let stage;
+  try {
+    stage = getStage(stageId);
+  } catch {
+    stage = STAGES.tutorial;
+  }
   const bus = new Emitter();
 
   // keep switcher button active state synced
   for (const b of document.querySelectorAll('[data-start-stage]')) {
-    b.classList.toggle('active', b.dataset.startStage === stageId);
+    b.classList.toggle('active', b.dataset.startStage === stage.id);
   }
 
   currentPlay = new Play(stage, {
@@ -42,7 +47,7 @@ function startStage(stageId) {
   });
   currentPlay.start();
 
-  if (stageId === 'tutorial') {
+  if (stage.id === 'tutorial') {
     currentGuide = new TutorialGuide(currentPlay, bus, {
       onSkip: () => handleStageEnd({ stageId: 'tutorial', outcome: 'complete', skipped: true }),
     });
@@ -62,28 +67,49 @@ async function handleStageEnd(summary) {
     const updated = applyTutorialDone(getProfile());
     await saveProgress(updated);
     title.textContent = 'Handa ka na!';
-    body.textContent = 'Tapos na ang Tutorial! Alam mo na kung paano tumingin sa taripa, umintindi ng salita ng tsuper, at magbigay ng tamang sukli.';
+    body.textContent = 'Tapos na ang Tutorial (Level 0)! Alam mo na kung paano tumingin sa taripa, umintindi ng salita ng tsuper, at magbigay ng tamang sukli.';
     stats.hidden = true;
     primary.textContent = 'Start Level 1';
     primary.onclick = () => startStage('level1');
-  } else if (summary.outcome === 'complete') {
-    const updated = applyLevelComplete(getProfile(), 0);
-    await saveProgress(updated);
-    title.textContent = 'Level 1 Complete!';
-    body.textContent = 'Naabot mo ang huling hintuan nang hindi nauubos ang buhay!';
+  } else if (summary.stageId.startsWith('endless-')) {
+    const diff = summary.stageId.slice(8);
+    const res = applyEndlessResult(getProfile(), diff, summary.score);
+    await saveProgress(res.profile);
+    title.textContent = 'Game Over (Endless Mode)';
+    body.textContent = `Stars Earned: ★ ${res.starsAfter} / 3${res.newBest ? ' (New High Score!)' : ''}`;
     stats.hidden = false;
     $('pg-score').textContent = summary.score;
     $('pg-streak').textContent = summary.bestStreak;
-    primary.textContent = 'Play Level 1 Again';
-    primary.onclick = () => startStage('level1');
+    primary.textContent = 'Play Again';
+    primary.onclick = () => startStage(summary.stageId);
+  } else if (summary.outcome === 'complete') {
+    const lvlIdx = LEVEL_ORDER.indexOf(summary.stageId);
+    const updated = applyLevelComplete(getProfile(), Math.max(0, lvlIdx));
+    await saveProgress(updated);
+    const nextStageId = STAGES[summary.stageId]?.next;
+    stats.hidden = false;
+    $('pg-score').textContent = summary.score;
+    $('pg-streak').textContent = summary.bestStreak;
+
+    if (nextStageId) {
+      title.textContent = `${STAGES[summary.stageId].name} Complete!`;
+      body.textContent = 'Naabot mo ang huling hintuan nang hindi nauubos ang buhay!';
+      primary.textContent = 'Move to Next Level';
+      primary.onclick = () => startStage(nextStageId);
+    } else {
+      title.textContent = 'Level 3 Complete!';
+      body.textContent = 'Binabati kita! Na-unlock mo na ang Endless Mode!';
+      primary.textContent = 'Play Endless Mode';
+      primary.onclick = () => { location.href = './login.html?section=gamemode'; };
+    }
   } else {
     title.textContent = 'Naubos ang Buhay!';
     body.textContent = 'Subukan ulit mula sa unang hintuan.';
     stats.hidden = false;
     $('pg-score').textContent = summary.score;
     $('pg-streak').textContent = summary.bestStreak;
-    primary.textContent = 'Retry Level 1 (Full Lives)';
-    primary.onclick = () => startStage('level1');
+    primary.textContent = 'Retry (Full Lives)';
+    primary.onclick = () => startStage(summary.stageId);
   }
 
   $('modal-postgame').hidden = false;
@@ -100,8 +126,7 @@ $('menu-close').onclick = () => {
 };
 $('pg-menu').onclick = () => {
   sfx('tap');
-  $('modal-postgame').hidden = true;
-  $('modal-menu').hidden = false;
+  location.href = './login.html?section=menu';
 };
 
 for (const b of document.querySelectorAll('[data-start-stage]')) {
@@ -128,7 +153,7 @@ $('set-sfx').onchange = (e) => {
   if (settings.sfx) sfx('tap');
 };
 
-// Boot: load profile (or guest mode) and launch Tutorial or Level 1
+// Boot: load profile (or guest mode) and launch requested stage
 (async function boot() {
   const urlStage = new URLSearchParams(location.search).get('stage');
   await initProgress();
@@ -137,7 +162,7 @@ $('set-sfx').onchange = (e) => {
     ? `Player: ${st.profile.nickname}`
     : 'Guest Mode (progress not saved online)';
 
-  if (urlStage && STAGES[urlStage]) {
+  if (urlStage) {
     startStage(urlStage);
   } else {
     startStage(st.profile.tutorialDone ? 'level1' : 'tutorial');

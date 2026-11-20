@@ -1,0 +1,429 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: url("../assets/MainMenuScreen1.gif") no-repeat center center / 100% 100%;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+  color: #111;
+  image-rendering: pixelated;
+}
+
+body.bg-gamemode {
+  background-image: url("../assets/ChooseGamemodeScreen1.gif");
+}
+
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+  background: transparent;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+
+.section-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.section-view[hidden] {
+  display: none !important;
+}
+
+/* ---- Pixel Art Buttons (3 states: normal, highlight, pressed) ---- */
+.pixel-btn {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+  font-weight: 400;
+  color: #111;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  outline: none;
+}
+
+/* Inner sprite layer so ButtonHighlight.png (700x220 vs 660x160) expands outward without shifting the button box */
+.pixel-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/BareButton.png") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.pixel-btn:hover:not(:disabled):not(.is-locked)::before,
+.pixel-btn:focus-visible:not(:disabled):not(.is-locked)::before {
+  /* 700/660 = 106.0606% width (+3.0303% each side), 220/160 = 137.5% height (+18.75% top & bottom) */
+  left: -3.0303%;
+  right: -3.0303%;
+  top: -18.75%;
+  bottom: -18.75%;
+  background-image: url("../assets/ButtonHighlight.png");
+}
+
+.pixel-btn:active:not(:disabled):not(.is-locked)::before {
+  inset: 0;
+  background-image: url("../assets/BareButtonPressed.png");
+}
+
+.pixel-btn:active:not(:disabled):not(.is-locked) span {
+  transform: translateY(2px);
+}
+
+.pixel-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* Locked Endless button state (grayed-out pill + Lock.png overlay) */
+.pixel-btn.is-locked {
+  cursor: not-allowed;
+}
+
+.pixel-btn.is-locked::before {
+  /* Turns the peach #ffd3ae fill into the muted warm gray #cfcbc0 from the sample while preserving the black border */
+  filter: grayscale(0.88) brightness(0.95);
+}
+
+#endless-lock-icon {
+  position: absolute;
+  left: 814px;
+  top: 344px;
+  width: 212px;
+  height: 212px;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 4;
+}
+
+#endless-lock-icon[hidden] {
+  display: none !important;
+}
+
+/* ---- Cream-Tinted Input Field Pill matching the reference mockups ---- */
+.pixel-input-wrap {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.pixel-input-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/BareButton.png") no-repeat center center / 100% 100%;
+  /* Lifts the peach fill (#ffd3ae) to the warm cream (#fef8ec) shown in the login/signup samples while keeping the crisp black pixel border */
+  filter: sepia(0.18) saturate(0.32) brightness(1.13) contrast(1.06);
+  image-rendering: pixelated;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.pixel-input-wrap:focus-within::before {
+  left: -3.0303%;
+  right: -3.0303%;
+  top: -18.75%;
+  bottom: -18.75%;
+  background-image: url("../assets/ButtonHighlight.png");
+}
+
+.pixel-input {
+  width: 86%;
+  height: 76%;
+  border: none;
+  background: transparent;
+  outline: none;
+  text-align: center;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+  font-size: 21px;
+  color: #111;
+  user-select: text;
+}
+
+.pixel-input::placeholder {
+  color: #1a1a1a;
+  opacity: 0.92;
+}
+
+.pixel-input:focus::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+/* ---- Top-Left Back Button (Log-In, Sign-Up & Choose Gamemode sections) ---- */
+.btn-back {
+  left: 14px;
+  top: 14px;
+  width: 186px;
+  height: 44px;
+  font-size: 20px;
+}
+
+/* ---- Section 1: Start-Up Screen ---- */
+#btn-go-login {
+  left: 424px;
+  top: 382px;
+  width: 432px;
+  height: 96px;
+  font-size: 26px;
+}
+
+#btn-go-signup {
+  left: 424px;
+  top: 518px;
+  width: 432px;
+  height: 96px;
+  font-size: 26px;
+}
+
+/* ---- Section 2: Log-In Verification Screen ---- */
+#login-user-wrap {
+  left: 472px;
+  top: 376px;
+  width: 336px;
+  height: 76px;
+}
+
+#login-pin-wrap {
+  left: 472px;
+  top: 468px;
+  width: 336px;
+  height: 76px;
+}
+
+#btn-login-submit {
+  left: 446px;
+  top: 586px;
+  width: 388px;
+  height: 86px;
+  font-size: 25px;
+}
+
+/* ---- Section 3: Sign-Up Verification Screen ---- */
+#signup-user-wrap {
+  left: 472px;
+  top: 384px;
+  width: 336px;
+  height: 76px;
+}
+
+#signup-pin1-wrap {
+  left: 294px;
+  top: 486px;
+  width: 336px;
+  height: 76px;
+}
+
+#signup-pin2-wrap {
+  left: 658px;
+  top: 486px;
+  width: 336px;
+  height: 76px;
+}
+
+#signup-pin1-wrap .pixel-input,
+#signup-pin2-wrap .pixel-input {
+  font-size: 18px;
+}
+
+#btn-signup-submit {
+  left: 446px;
+  top: 598px;
+  width: 388px;
+  height: 86px;
+  font-size: 25px;
+}
+
+/* ---- Section 4: Main Menu Screen (2x2 Grid) ---- */
+#btn-menu-play {
+  left: 306px;
+  top: 404px;
+  width: 332px;
+  height: 76px;
+  font-size: 23px;
+}
+
+#btn-menu-settings {
+  left: 654px;
+  top: 404px;
+  width: 332px;
+  height: 76px;
+  font-size: 23px;
+}
+
+#btn-menu-customize {
+  left: 306px;
+  top: 508px;
+  width: 332px;
+  height: 76px;
+  font-size: 23px;
+}
+
+#btn-menu-logout {
+  left: 654px;
+  top: 508px;
+  width: 332px;
+  height: 76px;
+  font-size: 23px;
+}
+
+/* ---- Section 5: Choose Gamemode Screen ---- */
+#btn-mode-normal {
+  left: 146px;
+  top: 418px;
+  width: 480px;
+  height: 108px;
+  font-size: 38px;
+}
+
+#btn-level-select {
+  left: 243px;
+  top: 543px;
+  width: 286px;
+  height: 62px;
+  font-size: 18px;
+}
+
+#btn-mode-endless {
+  left: 680px;
+  top: 418px;
+  width: 480px;
+  height: 108px;
+  font-size: 38px;
+}
+
+#btn-diff-select {
+  left: 777px;
+  top: 543px;
+  width: 286px;
+  height: 62px;
+  font-size: 18px;
+}
+
+#btn-diff-select[hidden] {
+  display: none !important;
+}
+
+/* ---- Status / Error Banner ---- */
+#status-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  background: rgba(20, 16, 22, 0.92);
+  color: #ffb4b4;
+  border: 3px solid #000;
+  padding: 6px 18px;
+  font-size: 15px;
+  text-align: center;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#status-toast.ok {
+  color: #a7f3d0;
+}
+
+#status-toast[hidden] {
+  display: none !important;
+}
+
+/* ---- Pop-up Modals (Settings & Customize preview) ---- */
+.menu-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.menu-modal[hidden] {
+  display: none !important;
+}
+
+.menu-card {
+  width: 500px;
+  background: #ffd3ae;
+  border: 4px solid #000;
+  box-shadow: 0 0 0 4px #e8ba93 inset, 8px 8px 0 rgba(0, 0, 0, 0.45);
+  padding: 22px 26px;
+  text-align: center;
+}
+
+.menu-card h2 {
+  margin: 0 0 14px 0;
+  font-size: 24px;
+  border-bottom: 3px solid #000;
+  padding-bottom: 8px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+  font-size: 17px;
+}
+
+.menu-row input[type="range"] {
+  width: 200px;
+  accent-color: #8c1d28;
+}
+
+.menu-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: #8c1d28;
+}
+
+.modal-close-wrap {
+  position: relative;
+  width: 240px;
+  height: 58px;
+  margin: 18px auto 0 auto;
+}
+
+.modal-close-wrap .pixel-btn {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  font-size: 20px;
+}
+
+.version-foot {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #3b2a1e;
+  display: flex;
+  justify-content: space-between;
+}

@@ -1,164 +1,364 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TsuperHero - Log In</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #1d2b53;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      padding: 2rem 1rem;
-    }
-
-    .card {
-      background: #2b3a6b;
-      padding: 1.5rem;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 340px;
-    }
-
-    h1 {
-      margin-top: 0;
-      text-align: center;
-    }
-
-    .tabs {
-      display: flex;
-      gap: .5rem;
-      margin-bottom: 1rem;
-    }
-
-    .tabs button {
-      flex: 1;
-    }
-
-    button,
-    input {
-      font-size: 1.1rem;
-      padding: .7rem;
-      border-radius: 8px;
-      border: 0;
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: .6rem;
-    }
-
-    button {
-      background: #ffcc00;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .tabs button {
-      margin-top: 0;
-      background: #556;
-      color: #fff;
-    }
-
-    .tabs button.active {
-      background: #ffcc00;
-      color: #000;
-    }
-
-    #msg {
-      min-height: 1.5rem;
-      margin-top: .8rem;
-      color: #ff9aa2;
-    }
-
-    #msg.ok {
-      color: #9affb0;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TsuperHero</title>
+  <link rel="stylesheet" href="../css/menu.css?v=4">
 </head>
-
 <body>
-  <div class="card">
-    <h1>TsuperHero</h1>
+  <div id="stage">
+    <!-- SECTION 1: Start-Up Screen (Log-In / Sign-Up) -->
+    <section id="sec-startup" class="section-view">
+      <button id="btn-go-login" class="pixel-btn" type="button"><span>Log-In</span></button>
+      <button id="btn-go-signup" class="pixel-btn" type="button"><span>Sign-Up</span></button>
+    </section>
 
-    <div id="auth-view">
-      <div class="tabs">
-        <button id="tab-login" class="active" type="button">Log In</button>
-        <button id="tab-signup" type="button">Sign Up</button>
-      </div>
-      <form id="form" autocomplete="off">
-        <input id="nick" placeholder="Nickname" maxlength="12" required>
-        <input id="pin" placeholder="4-digit PIN" type="password" inputmode="numeric" maxlength="4" required>
-        <button id="submit" type="submit">Log In</button>
+    <!-- SECTION 2: Log-In Verification Screen -->
+    <section id="sec-login" class="section-view" hidden>
+      <button id="btn-back-login" class="pixel-btn btn-back" type="button"><span>Back</span></button>
+      <form id="form-login" autocomplete="off">
+        <div id="login-user-wrap" class="pixel-input-wrap">
+          <input id="login-nick" class="pixel-input" type="text" placeholder="Enter Username" maxlength="12" required>
+        </div>
+        <div id="login-pin-wrap" class="pixel-input-wrap">
+          <input id="login-pin" class="pixel-input" type="password" inputmode="numeric" placeholder="4-Digit PIN" maxlength="4" required>
+        </div>
+        <button id="btn-login-submit" class="pixel-btn" type="submit"><span>LOG-IN</span></button>
       </form>
+    </section>
+
+    <!-- SECTION 3: Sign-Up Verification Screen -->
+    <section id="sec-signup" class="section-view" hidden>
+      <button id="btn-back-signup" class="pixel-btn btn-back" type="button"><span>Back</span></button>
+      <form id="form-signup" autocomplete="off">
+        <div id="signup-user-wrap" class="pixel-input-wrap">
+          <input id="signup-nick" class="pixel-input" type="text" placeholder="Enter Username" maxlength="12" required>
+        </div>
+        <div id="signup-pin1-wrap" class="pixel-input-wrap">
+          <input id="signup-pin1" class="pixel-input" type="password" inputmode="numeric" placeholder="Create 4 Digit PIN" maxlength="4" required>
+        </div>
+        <div id="signup-pin2-wrap" class="pixel-input-wrap">
+          <input id="signup-pin2" class="pixel-input" type="password" inputmode="numeric" placeholder="Confirm 4 Digit PIN" maxlength="4" required>
+        </div>
+        <button id="btn-signup-submit" class="pixel-btn" type="submit"><span>SIGN-UP</span></button>
+      </form>
+    </section>
+
+    <!-- SECTION 4: Main Menu Screen (Play, Settings, Customize, Log-Out) -->
+    <section id="sec-mainmenu" class="section-view" hidden>
+      <button id="btn-menu-play" class="pixel-btn" type="button"><span>Play</span></button>
+      <button id="btn-menu-settings" class="pixel-btn" type="button"><span>Settings</span></button>
+      <button id="btn-menu-customize" class="pixel-btn" type="button"><span>Customize</span></button>
+      <button id="btn-menu-logout" class="pixel-btn" type="button"><span>Log-Out</span></button>
+    </section>
+
+    <!-- SECTION 5: Choose Gamemode Screen (Normal + Level 0..3 / Endless Locked or Unlocked + Difficulty) -->
+    <section id="sec-gamemode" class="section-view" hidden>
+      <button id="btn-back-gamemode" class="pixel-btn btn-back" type="button"><span>Back</span></button>
+
+      <!-- Left side: Normal Mode & Current Level selector (0 = Tutorial, 1, 2, 3) -->
+      <button id="btn-mode-normal" class="pixel-btn" type="button"><span>Normal</span></button>
+      <button id="btn-level-select" class="pixel-btn" type="button"><span id="lbl-current-level">Current Level: 0</span></button>
+
+      <!-- Right side: Endless Mode (Locked with Lock.png by default, or Unlocked with Difficulty selector) -->
+      <button id="btn-mode-endless" class="pixel-btn is-locked" type="button"><span id="lbl-endless"></span></button>
+      <img id="endless-lock-icon" src="../assets/Lock.png" alt="Locked">
+      <button id="btn-diff-select" class="pixel-btn" type="button" hidden><span id="lbl-difficulty">Difficulty: Easy</span></button>
+    </section>
+
+    <!-- Settings Modal (from Main Menu) -->
+    <div id="modal-settings" class="menu-modal" hidden>
+      <div class="menu-card">
+        <h2>Settings</h2>
+        <div class="menu-row">
+          <label for="opt-volume">Volume</label>
+          <input id="opt-volume" type="range" min="0" max="100" value="80">
+        </div>
+        <div class="menu-row">
+          <label for="opt-sfx">Sound Effects</label>
+          <input id="opt-sfx" type="checkbox" checked>
+        </div>
+        <div class="modal-close-wrap">
+          <button id="btn-close-settings" class="pixel-btn" type="button"><span>Close</span></button>
+        </div>
+        <div class="version-foot">
+          <span id="player-label">Player: —</span>
+          <span id="version-text">v0.2.0-dev</span>
+        </div>
+      </div>
     </div>
 
-    <div id="home-view" hidden>
-      <p>Welcome, <b id="who"></b>!</p>
-      <p>Levels completed: <span id="levels"></span> &middot; Stars: <span id="stars"></span></p>
-      <button id="play-tutorial" type="button" onclick="location.href='./game.html?stage=tutorial'">Play Tutorial</button>
-      <button id="play-level1" type="button" onclick="location.href='./game.html?stage=level1'">Play Level 1</button>
-      <button id="logout" type="button" style="background:#556;color:#fff;">Log Out</button>
+    <!-- Customize Placeholder Modal (while customization assets are being made) -->
+    <div id="modal-customize" class="menu-modal" hidden>
+      <div class="menu-card">
+        <h2>Customize</h2>
+        <p style="font-size:15px; line-height:1.5;">
+          Earn Stars in Endless Mode to unlock new Sceneries, Jeepney Interiors, and Decors!
+        </p>
+        <p id="stars-summary" style="font-size:17px; margin:14px 0;">Stars Earned: ★ 0 / 3</p>
+        <div class="modal-close-wrap">
+          <button id="btn-close-customize" class="pixel-btn" type="button"><span>Close</span></button>
+        </div>
+      </div>
     </div>
 
-    <div id="msg"></div>
+    <!-- Status / Error Message Banner -->
+    <div id="status-toast" hidden></div>
   </div>
 
   <script type="module">
-    import { isConfigured } from "../js/firebase-config.js";
+    import { isConfigured, auth } from "../js/firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { signUp, logIn, logOut, friendlyError } from "../js/auth.js";
+    import { loadProfile } from "../js/storage.js";
+    import { fitStage } from "../js/game/layout.js?v=4";
+    import { VERSION } from "../js/game/data.js";
+    import { loadSettings, saveSettings } from "../js/game/settings.js";
+    import { unlock, setSettings, sfx } from "../js/game/audio.js";
 
     const $ = (id) => document.getElementById(id);
-    let mode = "login";
+    const SECTIONS = ["sec-startup", "sec-login", "sec-signup", "sec-mainmenu", "sec-gamemode"];
+    const LEVEL_STAGES = ["tutorial", "level1", "level2", "level3"];
+    const DIFF_KEYS = ["easy", "medium", "hard"];
+    const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
+
     let session = null; // { uid, profile }
+    let toastTimer = null;
+    let selectedLevel = 0; // 0 = Tutorial, 1 = Level 1, 2 = Level 2, 3 = Level 3
+    let diffIndex = 0;     // 0 = Easy, 1 = Medium, 2 = Hard
+    let settings = loadSettings();
+    setSettings(settings);
 
-    function say(text, ok = false) { $("msg").textContent = text; $("msg").className = ok ? "ok" : ""; }
+    window.addEventListener("pointerdown", () => unlock(), { once: true });
+    window.addEventListener("resize", fitStage);
+    fitStage();
 
-    function setMode(m) {
-      mode = m;
-      $("tab-login").classList.toggle("active", m === "login");
-      $("tab-signup").classList.toggle("active", m === "signup");
-      $("submit").textContent = m === "login" ? "Log In" : "Sign Up";
-      say("");
+    function showToast(text, ok = false, duration = 3500) {
+      const t = $("status-toast");
+      clearTimeout(toastTimer);
+      if (!text) {
+        t.hidden = true;
+        return;
+      }
+      t.textContent = text;
+      t.className = ok ? "ok" : "";
+      t.hidden = false;
+      if (duration > 0) {
+        toastTimer = setTimeout(() => { t.hidden = true; }, duration);
+      }
     }
-    $("tab-login").onclick = () => setMode("login");
-    $("tab-signup").onclick = () => setMode("signup");
 
-    function showHome() {
-      $("auth-view").hidden = true;
-      $("home-view").hidden = false;
-      $("who").textContent = session.profile.nickname;
-      $("levels").textContent = session.profile.levelsCompleted;
-      $("stars").textContent = session.profile.stars;
+    // Highest Normal level (0..3) unlocked by the current player
+    function getMaxUnlockedLevel(profile) {
+      if (!profile) return 1;
+      if (!profile.tutorialDone && (profile.levelsCompleted || 0) === 0) return 0;
+      return Math.min(3, (profile.levelsCompleted || 0) + 1);
     }
 
-    $("form").onsubmit = async (e) => {
+    function syncGamemodeUI() {
+      const p = session?.profile;
+      const endlessUnlocked = !!(p && (p.endlessUnlocked || (p.levelsCompleted || 0) >= 3));
+
+      $("lbl-current-level").textContent = `Current Level: ${selectedLevel}`;
+      const dKey = DIFF_KEYS[diffIndex];
+      $("lbl-difficulty").textContent = `Difficulty: ${DIFF_LABELS[dKey]}`;
+
+      const endlessBtn = $("btn-mode-endless");
+      const lockIcon = $("endless-lock-icon");
+      const diffBtn = $("btn-diff-select");
+      const endlessLbl = $("lbl-endless");
+
+      if (endlessUnlocked) {
+        endlessBtn.classList.remove("is-locked");
+        endlessLbl.textContent = "Endless";
+        lockIcon.hidden = true;
+        diffBtn.hidden = false;
+      } else {
+        endlessBtn.classList.add("is-locked");
+        endlessLbl.textContent = "";
+        lockIcon.hidden = false;
+        diffBtn.hidden = true;
+      }
+    }
+
+    function enterGamemodeSection() {
+      const p = session?.profile;
+      selectedLevel = getMaxUnlockedLevel(p);
+      syncGamemodeUI();
+      showSection("sec-gamemode");
+    }
+
+    function showSection(sectionId) {
+      sfx("tap");
+      showToast("");
+      for (const id of SECTIONS) {
+        $(id).hidden = id !== sectionId;
+      }
+      // Switch body background between MainMenuScreen1.gif and ChooseGamemodeScreen1.gif
+      document.body.classList.toggle("bg-gamemode", sectionId === "sec-gamemode");
+
+      if (sectionId === "sec-mainmenu" && session?.profile) {
+        $("player-label").textContent = `Player: ${session.profile.nickname}`;
+        $("stars-summary").textContent = `Stars Earned: ★ ${session.profile.stars || 0} / 3`;
+      }
+    }
+
+    // Section 1 -> Section 2 or 3
+    $("btn-go-login").onclick = () => {
+      $("form-login").reset();
+      showSection("sec-login");
+    };
+    $("btn-go-signup").onclick = () => {
+      $("form-signup").reset();
+      showSection("sec-signup");
+    };
+
+    // Back buttons
+    $("btn-back-login").onclick = () => showSection("sec-startup");
+    $("btn-back-signup").onclick = () => showSection("sec-startup");
+    $("btn-back-gamemode").onclick = () => showSection("sec-mainmenu");
+
+    // Section 2: Log-In Submit -> Section 4 (Main Menu)
+    $("form-login").onsubmit = async (e) => {
       e.preventDefault();
-      if (!isConfigured) return say("Add your Firebase config in js/firebase-config.js first.");
-      $("submit").disabled = true;
-      say("Please wait...", true);
+      sfx("tap");
+      if (!isConfigured) return showToast("Add your Firebase config in js/firebase-config.js first.");
+      const nick = $("login-nick").value.trim();
+      const pin = $("login-pin").value;
+      $("btn-login-submit").disabled = true;
+      showToast("Logging in...", true, 0);
       try {
-        const fn = mode === "login" ? logIn : signUp;
-        session = await fn($("nick").value.trim(), $("pin").value);
-        say("");
-        showHome();
+        session = await logIn(nick, pin);
+        showSection("sec-mainmenu");
       } catch (err) {
-        say(err.code === "app/invalid-input" ? err.message : friendlyError(err));
+        sfx("wrong");
+        showToast(err.code === "app/invalid-input" ? err.message : friendlyError(err));
       } finally {
-        $("submit").disabled = false;
+        $("btn-login-submit").disabled = false;
       }
     };
 
-    $("logout").onclick = async () => {
+    // Section 3: Sign-Up Submit (with Confirm PIN check) -> Section 4 (Main Menu)
+    $("form-signup").onsubmit = async (e) => {
+      e.preventDefault();
+      sfx("tap");
+      if (!isConfigured) return showToast("Add your Firebase config in js/firebase-config.js first.");
+      const nick = $("signup-nick").value.trim();
+      const pin1 = $("signup-pin1").value;
+      const pin2 = $("signup-pin2").value;
+      if (pin1 !== pin2) {
+        sfx("wrong");
+        return showToast("PINs do not match. Please check your 4-Digit PIN.");
+      }
+      $("btn-signup-submit").disabled = true;
+      showToast("Creating account...", true, 0);
+      try {
+        session = await signUp(nick, pin1);
+        showSection("sec-mainmenu");
+      } catch (err) {
+        sfx("wrong");
+        showToast(err.code === "app/invalid-input" ? err.message : friendlyError(err));
+      } finally {
+        $("btn-signup-submit").disabled = false;
+      }
+    };
+
+    // Section 4: Main Menu Actions -> Play opens Section 5 (Choose Gamemode)
+    $("btn-menu-play").onclick = () => enterGamemodeSection();
+
+    $("btn-menu-settings").onclick = () => {
+      sfx("tap");
+      $("modal-settings").hidden = false;
+    };
+    $("btn-close-settings").onclick = () => {
+      sfx("tap");
+      $("modal-settings").hidden = true;
+    };
+
+    $("btn-menu-customize").onclick = () => {
+      sfx("tap");
+      $("modal-customize").hidden = false;
+    };
+    $("btn-close-customize").onclick = () => {
+      sfx("tap");
+      $("modal-customize").hidden = true;
+    };
+
+    $("btn-menu-logout").onclick = async () => {
+      sfx("tap");
       await logOut(session && session.profile);
       session = null;
-      $("form").reset();
-      $("home-view").hidden = true;
-      $("auth-view").hidden = false;
-      say("Logged out.", true);
+      showSection("sec-startup");
+      showToast("Logged out.", true);
     };
+
+    // Section 5: Choose Gamemode Actions
+    $("btn-level-select").onclick = () => {
+      sfx("tap");
+      const maxLvl = getMaxUnlockedLevel(session?.profile);
+      // Cycle through unlocked levels 0..maxLvl (0 = Tutorial, 1, 2, 3)
+      selectedLevel = (selectedLevel + 1) % (maxLvl + 1);
+      syncGamemodeUI();
+    };
+
+    $("btn-mode-normal").onclick = () => {
+      sfx("tap");
+      const stageId = LEVEL_STAGES[selectedLevel] || "tutorial";
+      location.href = `./game.html?stage=${stageId}`;
+    };
+
+    $("btn-diff-select").onclick = () => {
+      sfx("tap");
+      diffIndex = (diffIndex + 1) % DIFF_KEYS.length;
+      syncGamemodeUI();
+    };
+
+    $("btn-mode-endless").onclick = () => {
+      const p = session?.profile;
+      const endlessUnlocked = !!(p && (p.endlessUnlocked || (p.levelsCompleted || 0) >= 3));
+      if (!endlessUnlocked) {
+        sfx("wrong");
+        showToast("Complete all 3 levels in Normal Mode to unlock Endless Mode!");
+        return;
+      }
+      sfx("tap");
+      const dKey = DIFF_KEYS[diffIndex];
+      location.href = `./game.html?stage=endless-${dKey}`;
+    };
+
+    // Settings bindings (localStorage)
+    $("opt-volume").value = Math.round(settings.volume * 100);
+    $("opt-sfx").checked = !!settings.sfx;
+    $("version-text").textContent = `v${VERSION}`;
+
+    $("opt-volume").oninput = (e) => {
+      settings.volume = Number(e.target.value) / 100;
+      setSettings(settings);
+      saveSettings(settings);
+    };
+    $("opt-sfx").onchange = (e) => {
+      settings.sfx = e.target.checked;
+      setSettings(settings);
+      saveSettings(settings);
+      if (settings.sfx) sfx("tap");
+    };
+
+    // If returning from game.html while already logged in, jump directly to Main Menu or Gamemode
+    const urlSection = new URLSearchParams(location.search).get("section");
+    onAuthStateChanged(auth, async (user) => {
+      if (user && !session) {
+        try {
+          const nick = (user.email || "").split("@")[0] || "player";
+          const profile = await loadProfile(user.uid, nick);
+          session = { uid: user.uid, profile };
+          if (urlSection === "gamemode") enterGamemodeSection();
+          else if (urlSection === "menu") showSection("sec-mainmenu");
+        } catch (e) {
+          console.warn("Could not restore session:", e);
+        }
+      }
+    });
   </script>
 </body>
-
 </html>
