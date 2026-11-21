@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TsuperHero</title>
-  <link rel="stylesheet" href="../css/menu.css?v=4">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../css/menu.css?v=5">
 </head>
 <body>
   <div id="stage">
@@ -357,6 +358,17 @@
         } catch (e) {
           console.warn("Could not restore session:", e);
         }
+      } else if (!user && !session) {
+        try {
+          const localUid = sessionStorage.getItem("tsuperhero.activeLocalUid");
+          if (localUid) {
+            const nick = localUid.replace(/^local-/, "") || "player";
+            const profile = await loadProfile(localUid, nick);
+            session = { uid: localUid, profile, offline: true };
+            if (urlSection === "gamemode") enterGamemodeSection();
+            else if (urlSection === "menu") showSection("sec-mainmenu");
+          }
+        } catch {}
       }
     });
   </script>

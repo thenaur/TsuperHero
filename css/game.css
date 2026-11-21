@@ -650,6 +650,13 @@ body {
   height: 64px;
 }
 
+.money.c025 {
+  background: #e8b478;
+  width: 50px;
+  height: 50px;
+  font-size: 15px;
+}
+
 .money:active:not(:disabled) {
   transform: translate(2px, 2px);
 }

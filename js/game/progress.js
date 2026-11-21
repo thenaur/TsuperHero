@@ -21,8 +21,17 @@ export async function init() {
       setTimeout(() => finish(null), 5000);
       const unsub = onAuthStateChanged(cfg.auth, (u) => { finish(u); setTimeout(() => unsub(), 0); });
     });
-    if (!user) return state;
     const storage = await import('../storage.js');
+    if (!user) {
+      const localUid = sessionStorage.getItem('tsuperhero.activeLocalUid');
+      if (localUid) {
+        const nick = localUid.replace(/^local-/, '') || 'player';
+        state.profile = await storage.loadProfile(localUid, nick);
+        state.uid = localUid;
+        state.storage = storage;
+      }
+      return state;
+    }
     const nick = (user.email || '').split('@')[0] || 'player';
     const profile = await Promise.race([storage.loadProfile(user.uid, nick), timeout(8000, 'Profile load')]);
     // Only enable saving once the real profile has loaded, so a failed load can never

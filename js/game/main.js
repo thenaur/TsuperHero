@@ -40,6 +40,11 @@ function startStage(stageId) {
   for (const b of document.querySelectorAll('[data-start-stage]')) {
     b.classList.toggle('active', b.dataset.startStage === stage.id);
   }
+  const restartBtn = $('menu-restart-stage');
+  if (restartBtn) {
+    restartBtn.dataset.startStage = stage.id;
+    restartBtn.textContent = `Restart ${stage.name}`;
+  }
 
   currentPlay = new Play(stage, {
     bus,
