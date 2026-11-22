@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../css/game.css?v=3">
 </head>
+
 <body>
   <div id="stage">
     <!-- Top HUD & MENU button -->
@@ -30,32 +32,32 @@
         <!-- Horizon & buildings wireframe matching the uploaded sketch -->
         <g stroke="#111" stroke-width="2" fill="none">
           <!-- Left buildings -->
-          <rect x="20" y="95" width="110" height="260" fill="#fff"/>
-          <polygon points="0,175 110,230 110,390 0,460" fill="#fff"/>
-          <rect x="65" y="25" width="28" height="105" fill="#fff"/>
-          <polygon points="130,95 250,95 250,315 130,365" fill="#fff"/>
-          <polygon points="250,110 355,110 355,260 250,315" fill="#fff"/>
+          <rect x="20" y="95" width="110" height="260" fill="#fff" />
+          <polygon points="0,175 110,230 110,390 0,460" fill="#fff" />
+          <rect x="65" y="25" width="28" height="105" fill="#fff" />
+          <polygon points="130,95 250,95 250,315 130,365" fill="#fff" />
+          <polygon points="250,110 355,110 355,260 250,315" fill="#fff" />
           <!-- Utility poles & wires -->
-          <line x1="210" y1="60" x2="210" y2="330" stroke-width="4"/>
-          <line x1="175" y1="78" x2="245" y2="78" stroke-width="3"/>
-          <line x1="345" y1="120" x2="345" y2="260" stroke-width="3"/>
+          <line x1="210" y1="60" x2="210" y2="330" stroke-width="4" />
+          <line x1="175" y1="78" x2="245" y2="78" stroke-width="3" />
+          <line x1="345" y1="120" x2="345" y2="260" stroke-width="3" />
           <path d="M 0,15 Q 110,90 210,78 Q 280,120 345,125" />
           <!-- Background trees & skyline -->
-          <rect x="490" y="135" width="90" height="85" fill="#fff"/>
-          <rect x="580" y="155" width="75" height="65" fill="#fff"/>
-          <circle cx="385" cy="145" r="24" fill="#fff"/>
-          <circle cx="425" cy="142" r="28" fill="#fff"/>
-          <line x1="385" y1="168" x2="385" y2="220" stroke-width="3"/>
-          <line x1="425" y1="168" x2="425" y2="220" stroke-width="3"/>
+          <rect x="490" y="135" width="90" height="85" fill="#fff" />
+          <rect x="580" y="155" width="75" height="65" fill="#fff" />
+          <circle cx="385" cy="145" r="24" fill="#fff" />
+          <circle cx="425" cy="142" r="28" fill="#fff" />
+          <line x1="385" y1="168" x2="385" y2="220" stroke-width="3" />
+          <line x1="425" y1="168" x2="425" y2="220" stroke-width="3" />
           <!-- Right buildings -->
-          <polygon points="730,45 840,75 840,260 730,220" fill="#fff"/>
-          <polygon points="840,120 960,165 960,340 840,265" fill="#fff"/>
-          <polygon points="945,165 1136,245 1136,445 945,345" fill="#fff"/>
+          <polygon points="730,45 840,75 840,260 730,220" fill="#fff" />
+          <polygon points="840,120 960,165 960,340 840,265" fill="#fff" />
+          <polygon points="945,165 1136,245 1136,445 945,345" fill="#fff" />
           <!-- Perspective road trapezoid -->
-          <polygon points="390,220 730,220 1075,470 50,470" fill="#fff" stroke-width="2.5"/>
+          <polygon points="390,220 730,220 1075,470 50,470" fill="#fff" stroke-width="2.5" />
         </g>
         <g id="road-lines" stroke="#bbb" stroke-width="3" stroke-dasharray="14 14">
-          <line x1="560" y1="225" x2="560" y2="465"/>
+          <line x1="560" y1="225" x2="560" y2="465" />
         </g>
       </svg>
     </div>
@@ -184,8 +186,10 @@
         <div class="modal-btns">
           <button type="button" data-start-stage="tutorial">Replay Tutorial (Level 0)</button>
           <button id="menu-restart-stage" type="button" data-start-stage="level1">Restart Level 1</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=gamemode'">Choose Gamemode</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=menu'">Back to Main Menu</button>
+          <button type="button" class="secondary" onclick="location.href='./login.html?section=gamemode'">Choose
+            Gamemode</button>
+          <button type="button" class="secondary" onclick="location.href='./login.html?section=menu'">Back to Main
+            Menu</button>
           <button id="menu-close" type="button" class="secondary">Resume Game</button>
         </div>
         <div class="meta-footer">
@@ -214,4 +218,5 @@
 
   <script type="module" src="../js/game/main.js?v=2"></script>
 </body>
+
 </html>
