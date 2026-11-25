@@ -102,11 +102,12 @@ function playRun(stage, seed, { wrong = false, paxPerLeg = 2, maxDays = 3 } = {}
       }
     } else if (run.phase === 'result') {
       legServed++;
-      const nextPhase = run.next();
-      if (nextPhase === 'failed' || nextPhase === 'gameover') return run;
       if (legServed >= paxPerLeg) {
         legServed = 0;
         run.arrive();
+      } else {
+        const nextPhase = run.next();
+        if (nextPhase === 'failed' || nextPhase === 'gameover') return run;
       }
     }
   }
@@ -128,17 +129,55 @@ test('perfect play completes every Normal stage with full lives and continuous p
   }
 });
 
-test('always-wrong play loses exactly one life per passenger', () => {
+test('always-wrong play loses lives and ends run with 0 score', () => {
   for (const id of [...LEVEL_ORDER, 'endless-easy', 'endless-medium', 'endless-hard']) {
     const stage = getStage(id);
     for (let seed = 1; seed <= 20; seed++) {
       const run = playRun(stage, seed, { wrong: true, paxPerLeg: 10 });
       assert.equal(run.phase, id.startsWith('endless') ? 'gameover' : 'failed', `${id} ${seed}`);
       assert.equal(run.lives, 0);
-      assert.equal(run.served, stage.lives);
+      assert.ok(run.served <= stage.lives && run.served >= 1);
       assert.equal(run.score, 0);
     }
   }
+});
+
+test('wrong "Magkano po?" answer deducts 1 heart in Normal/Endless (0 in Tutorial) and ends run at 0 lives', () => {
+  // Tutorial: wrong fare-question answer costs no life
+  const tut = createRun(STAGES.tutorial, { rng: mulberry32(1) });
+  tut.start();
+  assert.equal(tut.phase, 'question');
+  const tutRes = tut.answer(20); // correct is 10
+  assert.equal(tutRes.correct, false);
+  assert.equal(tut.lives, 0);
+  assert.equal(tut.phase, 'paying');
+
+  // Level 1: wrong fare-question answer deducts 1 heart and resets streak
+  const run = createRun(STAGES.level1, { rng: mulberry32(123) });
+  run.start();
+  let testedWrongQ = false;
+  for (let i = 0; i < 30 && !testedWrongQ; i++) {
+    if (run.phase === 'question') {
+      const before = run.lives;
+      const wrongOpt = run.current.question.options.find((o) => o !== run.current.question.answer);
+      const res = run.answer(wrongOpt);
+      assert.equal(res.correct, false);
+      assert.equal(res.livesLeft, before - 1);
+      assert.equal(run.lives, before - 1);
+      assert.equal(run.streak, 0);
+      testedWrongQ = true;
+    } else {
+      run.submit(run.current.change === 0);
+      run.next();
+    }
+  }
+  assert.ok(testedWrongQ, 'should have encountered a fare question');
+});
+
+test('Endless Mode uses lowered difficulty multipliers (0.5 / 0.75 / 1.0)', () => {
+  assert.equal(getStage('endless-easy').mult, 0.5);
+  assert.equal(getStage('endless-medium').mult, 0.75);
+  assert.equal(getStage('endless-hard').mult, 1);
 });
 
 test('patience timeout removes 1 heart and ends run when hearts hit 0', () => {

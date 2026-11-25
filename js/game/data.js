@@ -129,9 +129,9 @@ export const STAGES = {
 export const LEVEL_ORDER = ['level1', 'level2', 'level3'];
 
 export const DIFFICULTIES = {
-  easy: { label: 'Easy', route: ROUTES.endlessEasy, pay: 'easy', maxGroup: 3, qProb: 0.22, mult: 1, centavos: false, legSeconds: 42, patienceSec: 25 },
-  medium: { label: 'Medium', route: ROUTES.endlessMedium, pay: 'medium', maxGroup: 4, qProb: 0.28, mult: 1.5, centavos: false, legSeconds: 40, patienceSec: 23 },
-  hard: { label: 'Hard', route: ROUTES.endlessHard, pay: 'hard', maxGroup: 4, qProb: 0.3, mult: 2, centavos: true, legSeconds: 38, patienceSec: 21 },
+  easy: { label: 'Easy', route: ROUTES.endlessEasy, pay: 'easy', maxGroup: 3, qProb: 0.22, mult: 0.5, centavos: false, legSeconds: 42, patienceSec: 25 },
+  medium: { label: 'Medium', route: ROUTES.endlessMedium, pay: 'medium', maxGroup: 4, qProb: 0.28, mult: 0.75, centavos: false, legSeconds: 40, patienceSec: 23 },
+  hard: { label: 'Hard', route: ROUTES.endlessHard, pay: 'hard', maxGroup: 4, qProb: 0.3, mult: 1, centavos: true, legSeconds: 38, patienceSec: 21 },
 };
 
 export function getStage(id) {

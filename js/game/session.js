@@ -9,8 +9,8 @@
 //   - Endless Mode: the 5 stops are jumbled each Day. Reaching the final stop
 //     with lives > 0 advances to Day 2, Day 3, ... with freshly jumbled stops!
 //   - Running out of lives -> 'failed' (Normal) or 'gameover' (Endless).
-import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=22';
-import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=22';
+import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=23';
+import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=23';
 import { sum } from './money.js?v=17';
 
 export class Run {
@@ -91,14 +91,23 @@ export class Run {
     this.phase = this.current.question ? 'question' : 'paying';
   }
 
-  /** Answer the "Magkano po?" question (value in pesos). A wrong answer costs no life. */
+  /** Answer the "Magkano po?" question (value in pesos). Wrong answers deduct 1 heart in Normal & Endless. */
   answer(value) {
     if (this.phase !== 'question') return null;
     const q = this.current.question;
     const correct = value === q.answer;
-    if (correct && !this.practice) this.score += Math.round(SCORING.fareQuestion * this.stage.mult);
-    this.lastAnswer = { value, correct, answer: q.answer };
-    this.phase = 'paying';
+    if (correct) {
+      if (!this.practice) this.score += Math.round(SCORING.fareQuestion * this.stage.mult);
+    } else if (!this.practice) {
+      this.streak = 0;
+      this.lives = Math.max(0, this.lives - 1);
+    }
+    this.lastAnswer = { value, correct, answer: q.answer, livesLeft: this.lives };
+    if (!this.practice && this.lives <= 0) {
+      this.phase = this.endless ? 'gameover' : 'failed';
+    } else {
+      this.phase = 'paying';
+    }
     return this.lastAnswer;
   }
 
@@ -188,19 +197,18 @@ export class Run {
 
   /**
    * Called when the bottom progress bar reaches the next stop.
-   * Anti-stall safeguard: if the player reaches a stop in Normal/Endless mode with an
-   * unanswered ('question') or unpaid ('paying') passenger and either hasn't served anyone
-   * on this leg (`servedOnLeg === 0`) or `stalled` is flagged, automatically triggers a
-   * missed-passenger penalty (-1 life, reset streak) before advancing.
+   * If the player reaches a stop in Normal/Endless mode with any pending passenger
+   * (unanswered 'question' or unfinished 'paying' calculation), automatically deducts
+   * 1 life and resets streak before advancing.
    */
-  arrive({ stalled = false } = {}) {
+  arrive() {
     if (this.phase === 'idle' || this.phase === 'complete' || this.phase === 'failed' || this.phase === 'gameover') {
       return null;
     }
 
     this.lastMissedOnArrival = false;
     const pendingPassenger = this.phase === 'question' || this.phase === 'paying';
-    if (!this.practice && pendingPassenger && (this.servedOnLeg === 0 || stalled)) {
+    if (!this.practice && pendingPassenger) {
       this.served++;
       this.streak = 0;
       this.lives = Math.max(0, this.lives - 1);
