@@ -6,8 +6,8 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=19';
-import { createRun } from './session.js?v=19';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=21';
+import { createRun } from './session.js?v=21';
 import { fareOf } from './logic.js?v=17';
 import { formatAmount, formatPeso } from './money.js?v=17';
 import { pesoWord, amountWord, capitalize } from './numbers.js';
@@ -365,6 +365,7 @@ export class Play {
 
   buildFareTable() {
     const route = this.run.route;
+    const destCount = route.stops.length - 1;
     const head = el('tr', {}, [
       el('th', { class: 'corner', text: 'From \\ To' }),
       ...route.stops.slice(1).map((s) => el('th', { text: s })),
@@ -377,7 +378,44 @@ export class Play {
           return el('td', { text: j > i ? formatPeso(fareOf(route, i, j)) : '–' });
         }),
       ]));
-    $('fare-table').replaceChildren(el('thead', {}, head), el('tbody', {}, rows));
+    const table = $('fare-table');
+    table.dataset.cols = String(destCount);
+    table.replaceChildren(el('thead', {}, head), el('tbody', {}, rows));
+    this.fitDrawerContent();
+  }
+
+  fitDrawerContent() {
+    const drawer = $('drawer');
+    const table = $('fare-table');
+    const wordList = $('word-list');
+    if (!drawer || drawer.hidden) return;
+
+    if (this.panel === 'taripa' && table) {
+      let fontSize = 14;
+      let padY = 6;
+      let padX = 10;
+      table.style.fontSize = `${fontSize}px`;
+      table.style.setProperty('--cell-py', `${padY}px`);
+      table.style.setProperty('--cell-px', `${padX}px`);
+
+      while ((drawer.offsetWidth > 680 || drawer.offsetHeight > 470) && fontSize > 10) {
+        fontSize -= 1;
+        padY = Math.max(3, padY - 1);
+        padX = Math.max(5, padX - 1);
+        table.style.fontSize = `${fontSize}px`;
+        table.style.setProperty('--cell-py', `${padY}px`);
+        table.style.setProperty('--cell-px', `${padX}px`);
+      }
+    } else if (this.panel === 'salita' && wordList) {
+      const count = wordList.children.length;
+      wordList.dataset.cols = count > 14 ? '3' : '2';
+      let fontSize = count > 14 ? 13 : 14;
+      wordList.style.fontSize = `${fontSize}px`;
+      while ((drawer.offsetWidth > 680 || drawer.offsetHeight > 470) && fontSize > 10) {
+        fontSize -= 1;
+        wordList.style.fontSize = `${fontSize}px`;
+      }
+    }
   }
 
   buildStatic() {
@@ -470,6 +508,8 @@ export class Play {
     const a = this.run.answer(value);
     if (!a) return;
     this.setHint(false);
+    // Give elementary players a fresh full timer bar to calculate and count change after answering
+    this.resetPatience();
     sfx(a.correct ? 'correct' : 'wrong');
     this.render(true);
     if (!a.correct) {
@@ -554,11 +594,18 @@ export class Play {
 
   setDrawer(panel, emit = true) {
     this.panel = panel;
-    $('drawer').hidden = !panel;
+    const drawer = $('drawer');
+    drawer.hidden = !panel;
     $('panel-taripa').hidden = panel !== 'taripa';
     $('panel-salita').hidden = panel !== 'salita';
     for (const t of document.querySelectorAll('#side-tabs [data-panel]')) {
       t.classList.toggle('active', t.dataset.panel === panel);
+    }
+    if (panel) {
+      this.fitDrawerContent();
+      drawer.classList.remove('pop-in');
+      void drawer.offsetWidth;
+      drawer.classList.add('pop-in');
     }
     if (emit) { sfx('tap'); this.emit('drawer', panel); }
   }

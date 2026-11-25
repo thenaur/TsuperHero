@@ -257,29 +257,43 @@ html, body {
     brightness(0.75);
 }
 
-/* ---- Slide-out Drawer for Taripa / Salita ng Tsuper ---- */
+/* ---- Slide-out Drawer for Taripa / Salita ng Tsuper (Dynamic content-fitting container, no scrollbars) ---- */
 #drawer {
   position: absolute;
-  top: 140px;
+  top: 138px;
   left: 84px;
-  width: 500px;
-  max-height: 360px;
+  width: fit-content;
+  height: fit-content;
+  min-width: 280px;
+  max-width: 680px;
   background: #fdf6e3;
   border: 4px solid #111;
   box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
-  padding: 14px 16px;
+  padding: 12px 16px 14px 16px;
   z-index: 26;
-  overflow-y: auto;
+  overflow: hidden;
+  transform-origin: top left;
 }
 
 #drawer[hidden] {
   display: none !important;
 }
 
+@keyframes drawerPixelPop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(-6px); }
+  50%  { opacity: 1; transform: scale(1.03) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#drawer.pop-in {
+  animation: drawerPixelPop 220ms steps(4, end) forwards;
+}
+
 .drawer-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   border-bottom: 3px solid #111;
   padding-bottom: 8px;
   margin-bottom: 10px;
@@ -287,16 +301,19 @@ html, body {
 
 .drawer-head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
+  white-space: nowrap;
 }
 
 .drawer-close {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   background: #ffd3ae;
   border: 3px solid #111;
   padding: 3px 10px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .drawer-close:hover {
@@ -309,15 +326,18 @@ html, body {
 }
 
 #fare-table {
-  width: 100%;
+  --cell-py: 6px;
+  --cell-px: 10px;
+  width: auto;
   border-collapse: collapse;
   font-size: 14px;
 }
 
 #fare-table th, #fare-table td {
   border: 2px solid #111;
-  padding: 6px 8px;
+  padding: var(--cell-py) var(--cell-px);
   text-align: center;
+  white-space: nowrap;
 }
 
 #fare-table thead th {
@@ -333,10 +353,22 @@ html, body {
 
 #word-list {
   margin: 0;
-  padding-left: 20px;
-  columns: 2;
-  font-size: 15px;
-  line-height: 1.75;
+  padding: 0 0 0 18px;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 28px;
+  row-gap: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+#word-list[data-cols="3"] {
+  grid-template-columns: repeat(3, max-content);
+  column-gap: 22px;
+}
+
+#word-list li {
+  white-space: nowrap;
 }
 
 /* ---- Top-Right Payment Display Box (Tight-cropped SukliContainer.png 520x199) + SUKLIAN / SAKTO NA ---- */
@@ -1063,16 +1095,36 @@ html, body {
 }
 
 /* ---- Guided Tutorial Step Card ---- */
+@keyframes tutGlowPulse {
+  0%, 100% {
+    outline-color: #ffd166;
+    box-shadow: 0 0 0 7px rgba(255, 209, 102, 0.55), 0 0 18px rgba(255, 209, 102, 0.75);
+  }
+  50% {
+    outline-color: #fff3b0;
+    box-shadow: 0 0 0 10px rgba(255, 209, 102, 0.8), 0 0 24px rgba(255, 224, 138, 0.95);
+  }
+}
+
 .tut-highlight {
   outline: 4px solid #ffd166 !important;
-  box-shadow: 0 0 0 7px rgba(255, 209, 102, 0.45) !important;
+  box-shadow: 0 0 0 7px rgba(255, 209, 102, 0.55), 0 0 18px rgba(255, 209, 102, 0.75) !important;
   border-radius: 4px;
+  animation: tutGlowPulse 1.2s ease-in-out infinite;
+  z-index: 28 !important;
 }
 
 #hud-lives.tut-highlight,
+#hud-hint-top.tut-highlight,
 #status-above-tray.tut-highlight {
   padding: 4px 10px;
-  background: rgba(20, 14, 16, 0.55);
+  background: rgba(20, 14, 16, 0.65);
+}
+
+#pay-actions.tut-highlight,
+#tray-tools.tut-highlight {
+  padding: 4px;
+  background: rgba(255, 209, 102, 0.18);
 }
 
 #bottom-route-bar.tut-highlight {
@@ -1085,12 +1137,18 @@ html, body {
   position: absolute;
   left: 84px;
   top: 146px;
-  width: 460px;
+  width: 470px;
   background: #fdf6e3;
   border: 4px solid #140e10;
   box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
   padding: 12px 16px;
-  z-index: 25;
+  z-index: 30;
+  transition: top 160ms ease, left 160ms ease;
+}
+
+#tutorial-bar.drawer-avoid {
+  top: 416px;
+  left: 310px;
 }
 
 #tutorial-bar[hidden] {
