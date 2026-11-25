@@ -1,4 +1,4 @@
-// Pure game rules: fares, passengers, payments, fare questions, scoring.
+// Pure game rules: fares, passengers, payments, fare questions, scoring, route jumbling.
 // No DOM here, so it can be tested with Node (see tests/).
 import { MAX_PAYMENT, SCORING } from './data.js';
 import { toCentavos } from './money.js';
@@ -16,6 +16,25 @@ export function mulberry32(seed) {
 }
 export const randInt = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 export const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+
+/** Fisher-Yates shuffle returning a new array. */
+export function shuffle(rng, arr) {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Keeps stops[0] (Terminal) at the start and jumbles the destination stops for Endless Mode. */
+export function jumbleRoute(rng, baseRoute) {
+  const [start, ...destinations] = baseRoute.stops;
+  return {
+    stops: [start, ...shuffle(rng, destinations)],
+    fares: baseRoute.fares,
+  };
+}
 
 /** Throws if a route's fare matrix has the wrong shape or bad values. */
 export function validateRoute(route) {
@@ -44,7 +63,7 @@ export function groupSize(rng, maxGroup) {
 
 /** How much the passenger hands over (centavos). Always >= total and <= MAX_PAYMENT. */
 export function makePayment(rng, stage, total) {
-  if (rng() < 0.12) return total; // exact payment -> "SAKTO NA"
+  if (rng() < 0.16) return total; // exact payment -> "SAKTO NA"
   const up = (step) => Math.ceil(total / step) * step;
   const c = new Set();
   const bills = [2000, 5000, 10000, 20000];
@@ -71,19 +90,36 @@ export function makePayment(rng, stage, total) {
   return options.length ? pick(rng, options) : total;
 }
 
-/** "Magkano po?" question with 2 options in pesos, or null if this fare can't be asked. */
-export function makeFareQuestion(rng, stage, fare) {
-  if (fare % 100 !== 0) return null; // centavo fares are never asked
-  const pesos = fare / 100;
+/**
+ * "Magkano po?" question with 2 options in pesos, or null if this total can't be asked.
+ * Uses the TOTAL fare (fare * count): e.g. 2 people to a ₱10 stop -> answer is ₱20 ("BENTE")!
+ */
+export function makeFareQuestion(rng, stage, total, singleFare = total) {
+  if (total % 100 !== 0) return null; // centavo totals are never asked
+  const pesos = total / 100;
+  const singlePesos = singleFare % 100 === 0 ? singleFare / 100 : null;
   let wrong;
+
   if (stage.vocab) {
     if (!stage.vocab.includes(pesos)) return null;
     const others = stage.vocab.filter((v) => v !== pesos)
       .sort((a, b) => Math.abs(a - pesos) - Math.abs(b - pesos));
     if (!others.length) return null;
-    wrong = pick(rng, others.slice(0, 2));
+    // For multi-passenger groups, include the single-person fare as a smart distractor (e.g. DIYES vs BENTE)
+    if (singlePesos && singlePesos !== pesos && stage.vocab.includes(singlePesos) && rng() < 0.6) {
+      wrong = singlePesos;
+    } else {
+      wrong = pick(rng, others.slice(0, 2));
+    }
   } else {
-    wrong = pesos + pick(rng, [-3, -2, -1, 1, 2, 3, 5, -5].filter((d) => pesos + d >= 5));
+    const candidates = [-5, -3, -2, -1, 1, 2, 3, 5, 10]
+      .map((d) => pesos + d)
+      .filter((v) => v >= 5 && v !== pesos);
+    if (singlePesos && singlePesos >= 5 && singlePesos !== pesos && rng() < 0.5) {
+      wrong = singlePesos;
+    } else {
+      wrong = pick(rng, candidates);
+    }
   }
   return { answer: pesos, options: rng() < 0.5 ? [pesos, wrong] : [wrong, pesos] };
 }
@@ -93,21 +129,22 @@ function buildPassenger(board, dest, count, fare, payment, question) {
   return { board, dest, count, fare, total, payment, change: payment - total, question };
 }
 
-export function makePassenger(rng, stage, board) {
-  const route = stage.route;
+export function makePassenger(rng, stage, board, route = stage.route, { allowQuestion = true } = {}) {
   const dest = randInt(rng, board + 1, route.stops.length - 1);
   const count = groupSize(rng, stage.maxGroup);
   const fare = fareOf(route, board, dest);
-  const question = rng() < stage.qProb ? makeFareQuestion(rng, stage, fare) : null;
-  const payment = makePayment(rng, stage, fare * count);
+  const total = fare * count;
+  const question = allowQuestion && rng() < stage.qProb ? makeFareQuestion(rng, stage, total, fare) : null;
+  const payment = makePayment(rng, stage, total);
   return buildPassenger(board, dest, count, fare, payment, question);
 }
 
-export function fixedPassenger(stage) {
-  const f = stage.fixed;
+export function fixedPassenger(stage, idx = 0) {
+  const f = (stage.fixedQueue && stage.fixedQueue[idx]) || stage.fixed;
   const fare = fareOf(stage.route, f.board, f.dest);
   if (f.payment < fare * f.count) throw new Error('Fixed passenger pays too little');
-  return buildPassenger(f.board, f.dest, f.count, fare, f.payment, null);
+  const q = f.question ? { answer: f.question.answer, options: f.question.options.slice() } : null;
+  return buildPassenger(f.board, f.dest, f.count, fare, f.payment, q);
 }
 
 export function scorePoints(streak, mult = 1) {

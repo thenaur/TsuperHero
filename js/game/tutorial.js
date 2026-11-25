@@ -1,47 +1,68 @@
-// Step-by-step guided tutorial for first-time players (Page 4 of spec).
-// Fixed passenger boards at Terminal -> Palengke, pays ₱20 ("Bente po!") for a ₱10 fare.
-// Highlights each tool in turn: fare matrix, payment prompt, coin container, give-change button.
+// Step-by-step guided English tutorial for first-time players.
+// Fixed first passenger asks "MAGKANO PO PAPUNTANG JOLLIBEE?" (BENTE vs DIYES + ? hint),
+// then pays ₱20 ("Bente!") for a ₱10 fare.
+// Highlights: Speech bubble, Taripa icon, Fare table, Fare choices & ? hint, BAYAD/SUKLI box,
+// Hearts & Time Bar, Route progress bar, Money tray, and SUKLIAN button.
 
 const $ = (id) => document.getElementById(id);
 
 const STEPS = [
   {
-    target: 'mirror-box',
-    title: 'Hakbang 1: Pakinggan ang Pasahero',
-    text: 'May sumakay sa Terminal papuntang Palengke! Sabi niya: "Bayad po, bente!" Ang "bente" ay ₱20 sa salita ng tsuper.',
-    btn: 'Susunod →',
+    target: 'speech-bubble',
+    title: 'Step 1: Listen to the Passenger',
+    text: 'Welcome, Tsuper! Sometimes a passenger asks how much the fare is before paying. This passenger asks: "Magkano po papuntang Jollibee?"',
+    btn: 'Next →',
   },
   {
     target: 'tab-taripa',
-    title: 'Hakbang 2: Buksan ang Taripa (Fare Matrix)',
-    text: 'Pindutin ang tab na [>> TARIPA] sa kaliwa para makita kung magkano ang pamasahe mula Terminal hanggang Palengke.',
+    title: 'Step 2: Open the Taripa (Fare Matrix)',
+    text: 'Click the Taripa icon on the top-left to check the fare from Terminal to Jollibee.',
     waitEvent: 'drawer',
     check: (panel) => panel === 'taripa',
   },
   {
     target: 'fare-table',
-    title: 'Hakbang 3: Basahin ang Taripa',
-    text: 'Mula Terminal papuntang Palengke, ang pamasahe ay ₱10.00. Isara ang taripa o pindutin ang Susunod.',
-    btn: 'Susunod →',
+    title: 'Step 3: Read the Fare',
+    text: 'From Terminal to Jollibee, the fare is ₱10.00. Tip: if a passenger asks for 2 or more people, multiply the fare by the number of people! Click Next to close.',
+    btn: 'Next →',
     onNext: (play) => play.setDrawer(null, false),
   },
   {
+    target: 'choices',
+    title: 'Step 4: Answer the Fare (or Use a Hint!)',
+    text: 'Pick the Filipino word for ₱10 ("DIYES"). Need help reading the slang? Click the yellow ? hint button (your HINTS: x3 counter is next to MENU) or check Salita ng Tsuper!',
+    waitEvent: 'answer',
+    check: () => true,
+  },
+  {
     target: 'payment-box',
-    title: 'Hakbang 4: Tingnan ang Bayad',
-    text: 'Nasa kanan ang bayad ng pasahero (20.00) at ang sukli na inihahanda mo (0.00). Dahil ₱20 ang bayad at ₱10 ang pamasahe: ₱20 − ₱10 = ₱10 ang sukli.',
-    btn: 'Susunod →',
+    title: 'Step 5: Check BAYAD & SUKLI',
+    text: 'Now the passenger pays "Bente" (₱20)! BAYAD shows 20 and SUKLI shows your change. ₱20 − ₱10 = ₱10 change! (If the payment is exact, press SAKTO NA instead.)',
+    btn: 'Next →',
+  },
+  {
+    target: 'status-above-tray',
+    title: 'Step 6: Watch Your Hearts & Time Bar',
+    text: 'These hearts are your lives, and the bar below them is the passenger timer (Green → Yellow → Red). Wrong change or running out of time costs 1 heart — no penalty in Tutorial!',
+    btn: 'Next →',
+  },
+  {
+    target: 'bottom-route-bar',
+    title: 'Step 7: Follow the Route Progress Bar',
+    text: 'This progress bar tracks your jeepney to each stop. Passengers keep paying until you reach the next stop — keep at least 1 heart until the final stop to win!',
+    btn: 'Next →',
   },
   {
     target: 'tray-box',
-    title: 'Hakbang 5: Pumili ng Barya o Pera',
-    text: 'Pumili ng ₱10 mula sa lalagyan ng barya at pera sa ibaba (halimbawa: isang ₱10 na barya, o dalawang ₱5).',
+    title: 'Step 8: Pick Bills or Coins',
+    text: 'Click ₱10 worth of coins from your money tray below (for example, one ₱10 coin or two ₱5 coins).',
     waitEvent: 'change',
     check: (total) => total === 1000,
   },
   {
     target: 'btn-suklian',
-    title: 'Hakbang 6: Ibigay ang Sukli',
-    text: 'Tama na ang ₱10.00 na sukli! Pindutin ang "SUKLIAN" para ibigay ang sukli sa pasahero.',
+    title: 'Step 9: Give the Change',
+    text: '₱10 change is ready! Click the green SUKLIAN button to give change and start driving toward Jollibee!',
     waitEvent: 'submit',
     check: (res) => res && res.correct,
   },

@@ -1,96 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TsuperHero – Gameplay Prototype (Tutorial & Level 1)</title>
+  <title>TsuperHero – Gameplay</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../css/game.css?v=3">
+  <link rel="stylesheet" href="../css/game.css?v=20">
 </head>
-
 <body>
   <div id="stage">
-    <!-- Top HUD & MENU button -->
+    <!-- Layer 1: Scrolling Road / Destination Landmark Still Frame -->
+    <div id="windshield">
+      <img id="road-img" src="../assets/RoadLoop.gif" alt="Philippine Road">
+    </div>
+
+    <!-- Layer 2: Jeepney Interior & Steering Wheel -->
+    <img id="jeep-interior" src="../assets/JeepInterior.png" alt="Jeepney Interior">
+
+    <!-- Layer 3: Animated Driver Left Hand -->
+    <img id="driver-hand" src="../assets/DriverHand.gif" alt="Driver Hand">
+
+    <!-- Top Gray Header Bar (SCORE, STREAK, Hints, MENU) -->
     <div id="top-bar">
       <div class="hud-left">
-        <span id="hud-stage" class="hud-pill">Tutorial</span>
-        <span id="hud-lives" class="hud-pill" title="Lives">♥♥♥♥♥</span>
-        <span id="hud-score-wrap" class="hud-pill">Score: <b id="hud-score">0</b></span>
-        <span id="hud-streak-wrap" class="hud-pill">Streak: <b id="hud-streak">0</b></span>
-        <div class="stage-QuickSwitch" title="Quick prototype stage switch">
-          <button type="button" data-start-stage="tutorial">Tutorial</button>
-          <button type="button" data-start-stage="level1">Level 1</button>
-        </div>
+        <span id="hud-score-wrap" class="hud-stat">SCORE: <b id="hud-score">0</b></span>
+        <span id="hud-streak-wrap" class="hud-stat">STREAK: <b id="hud-streak">0</b></span>
       </div>
-      <button id="btn-menu" type="button">MENU</button>
-    </div>
-
-    <!-- Driver POV Windshield (Wireframe street perspective) -->
-    <div id="windshield">
-      <svg id="road-svg" viewBox="0 0 1136 470" xmlns="http://www.w3.org/2000/svg">
-        <!-- Horizon & buildings wireframe matching the uploaded sketch -->
-        <g stroke="#111" stroke-width="2" fill="none">
-          <!-- Left buildings -->
-          <rect x="20" y="95" width="110" height="260" fill="#fff" />
-          <polygon points="0,175 110,230 110,390 0,460" fill="#fff" />
-          <rect x="65" y="25" width="28" height="105" fill="#fff" />
-          <polygon points="130,95 250,95 250,315 130,365" fill="#fff" />
-          <polygon points="250,110 355,110 355,260 250,315" fill="#fff" />
-          <!-- Utility poles & wires -->
-          <line x1="210" y1="60" x2="210" y2="330" stroke-width="4" />
-          <line x1="175" y1="78" x2="245" y2="78" stroke-width="3" />
-          <line x1="345" y1="120" x2="345" y2="260" stroke-width="3" />
-          <path d="M 0,15 Q 110,90 210,78 Q 280,120 345,125" />
-          <!-- Background trees & skyline -->
-          <rect x="490" y="135" width="90" height="85" fill="#fff" />
-          <rect x="580" y="155" width="75" height="65" fill="#fff" />
-          <circle cx="385" cy="145" r="24" fill="#fff" />
-          <circle cx="425" cy="142" r="28" fill="#fff" />
-          <line x1="385" y1="168" x2="385" y2="220" stroke-width="3" />
-          <line x1="425" y1="168" x2="425" y2="220" stroke-width="3" />
-          <!-- Right buildings -->
-          <polygon points="730,45 840,75 840,260 730,220" fill="#fff" />
-          <polygon points="840,120 960,165 960,340 840,265" fill="#fff" />
-          <polygon points="945,165 1136,245 1136,445 945,345" fill="#fff" />
-          <!-- Perspective road trapezoid -->
-          <polygon points="390,220 730,220 1075,470 50,470" fill="#fff" stroke-width="2.5" />
-        </g>
-        <g id="road-lines" stroke="#bbb" stroke-width="3" stroke-dasharray="14 14">
-          <line x1="560" y1="225" x2="560" y2="465" />
-        </g>
-      </svg>
-    </div>
-
-    <!-- Top-Center Rearview Mirror (Passenger & Speech Prompt) -->
-    <div id="mirror-stem"></div>
-    <div id="mirror-box">
-      <div id="passenger" class="empty" data-count="0"></div>
-      <div class="speech-wrap">
-        <p id="speech-text">Handa nang bumiyahe!</p>
-        <div id="speech-note"></div>
+      <div class="hud-right">
+        <span id="hud-hint-top" hidden>HINTS: <b class="hint-x">x<span id="hint-count">3</span></b></span>
+        <button id="btn-menu" type="button"><span>MENU</span></button>
       </div>
     </div>
 
-    <!-- Commuter-Lingo Fare Question Prompt (appears when passenger asks "Magkano po?") -->
-    <div id="choices" hidden>
-      <div class="choices-title">Magkano ang pamasahe? Piliin ang tamang sagot:</div>
-      <div class="choices-row">
-        <button type="button" class="choice" data-value="10">Diyes</button>
-        <button type="button" class="choice" data-value="15">Kinse</button>
-      </div>
-      <button id="btn-hint" type="button">Hint (<span id="hint-count">3</span> left)</button>
-    </div>
-
-    <!-- Left Double-Chevron Tabs (Taripa & Salita ng Tsuper) -->
+    <!-- Top-Left Windshield Icons: Taripa & Salita ng Tsuper -->
     <div id="side-tabs">
-      <button id="tab-taripa" class="side-tab" type="button" data-panel="taripa" title="Fare Matrix (Taripa)">
-        <span class="chev">&raquo;</span>
-        <span class="tab-lbl">TARIPA</span>
+      <button id="tab-taripa" class="icon-btn" type="button" data-panel="taripa" title="Taripa (Fare Matrix)">
+        <img src="../assets/TariffIcon.png" alt="Taripa">
       </button>
-      <button id="tab-salita" class="side-tab" type="button" data-panel="salita" title="Salita ng Tsuper">
-        <span class="chev">&raquo;</span>
-        <span class="tab-lbl">SALITA</span>
+      <button id="tab-salita" class="icon-btn" type="button" data-panel="salita" title="Salita ng Tsuper">
+        <img src="../assets/TranslationsIcon.png" alt="Salita ng Tsuper">
       </button>
     </div>
 
@@ -99,76 +47,105 @@
       <div id="panel-taripa" hidden>
         <div class="drawer-head">
           <h3>Taripa (Fare Matrix)</h3>
-          <button id="drawer-close" type="button">&times; Isara</button>
+          <button id="drawer-close" class="drawer-close" type="button">&times; Close</button>
         </div>
         <table id="fare-table"></table>
       </div>
       <div id="panel-salita" hidden>
         <div class="drawer-head">
           <h3>Salita ng Tsuper</h3>
-          <button type="button" onclick="document.getElementById('drawer-close').click()">&times; Isara</button>
+          <button class="drawer-close" type="button" onclick="document.getElementById('drawer-close').click()">&times; Close</button>
         </div>
         <ul id="word-list"></ul>
       </div>
     </div>
 
-    <!-- Top-Right Payment Display Box + SUKLIAN / SAKTO NA -->
+    <!-- Top-Right Payment Display Box (SukliContainer.png) + SUKLIAN / SAKTO NA -->
     <div id="payment-area">
       <div id="payment-box">
-        <div class="pay-split">
-          <div class="pay-cell">
-            <div class="pay-lbl">Bayad</div>
-            <div id="paid-amount" class="pay-val">0.00</div>
-          </div>
-          <div class="pay-cell">
-            <div class="pay-lbl">Sukli Mo</div>
-            <div id="given-amount" class="pay-val">0.00</div>
-          </div>
+        <div id="pay-cell-bayad" class="pay-cell">
+          <div class="pay-lbl">BAYAD:</div>
+          <div id="paid-amount" class="pay-val">0</div>
         </div>
-        <div id="given-list"></div>
-        <div class="pay-tools">
-          <button id="btn-undo" type="button">Undo</button>
-          <button id="btn-clear" type="button">Clear</button>
+        <div id="pay-cell-sukli" class="pay-cell">
+          <div class="pay-lbl">SUKLI:</div>
+          <div id="given-amount" class="pay-val">0</div>
         </div>
       </div>
       <div class="pay-actions">
-        <button id="btn-suklian" type="button">SUKLIAN</button>
-        <button id="btn-sakto" type="button">SAKTO NA</button>
+        <button id="btn-suklian" class="pixel-action-btn" type="button">SUKLIAN</button>
+        <button id="btn-sakto" class="pixel-action-btn" type="button">SAKTO NA</button>
       </div>
     </div>
 
-    <!-- Route Progress Bar with Stop Nodes -->
-    <div id="route-bar">
-      <div class="track-line">
-        <div id="progress-fill"></div>
+    <!-- Passenger Pixel Speech Bubble & Fare Question Choices -->
+    <div id="speech-area">
+      <div id="speech-bubble" hidden>
+        <p id="speech-text"></p>
+        <div id="speech-note"></div>
       </div>
-      <div id="progress-stops"></div>
+      <div id="choices" hidden>
+        <button type="button" class="choice" data-value="20">BENTE</button>
+        <button type="button" class="choice" data-value="10">DIYES</button>
+        <button id="btn-hint" type="button" title="Use Hint">
+          <img src="../assets/hint_question.png" alt="Use Hint">
+        </button>
+      </div>
     </div>
 
-    <!-- Steering Wheel (Bottom-Left) -->
-    <div id="steering-wheel"></div>
+    <!-- Lives (hearts.png) & Timer Bar (progress_bar_filled.png) Perched Above Money Box -->
+    <div id="status-above-tray">
+      <div id="hud-lives" title="Lives"></div>
+      <div id="timer-bar-wrap">
+        <div id="timer-fill"></div>
+      </div>
+    </div>
 
-    <!-- Container of Bills and Coins (Bottom-Right) -->
+    <!-- Bottom-Right Money Container (MoneyContainer.png) -->
     <div id="tray-box">
-      <div id="tray"></div>
+      <div id="tray-bills" class="tray-bills"></div>
+      <div id="tray-coins" class="tray-coins"></div>
+      <div class="tray-tools">
+        <button id="btn-undo" type="button">UNDO</button>
+        <button id="btn-clear" type="button">CLEAR</button>
+      </div>
+    </div>
+
+    <!-- SAMPLE C Dynamic Bottom Route Progress Bar -->
+    <div id="bottom-route-bar">
+      <div id="hud-stage" class="bottom-badge">LVL 0</div>
+      <div id="route-track-wrap">
+        <div class="track-line">
+          <div id="progress-fill"></div>
+        </div>
+        <img id="mini-jeepney" src="../assets/MiniJeepney.png" alt="Jeepney">
+        <div id="progress-stops"></div>
+      </div>
+      <div id="bottom-score-badge" class="bottom-badge">SCORE: <span id="bottom-score">0</span></div>
     </div>
 
     <!-- Guided Tutorial Step Card -->
     <div id="tutorial-bar" hidden>
-      <div class="tut-head">
-        <span id="tut-title">Tutorial</span>
-      </div>
+      <span id="tut-title">Tutorial</span>
       <p id="tut-text"></p>
       <div class="tut-actions">
         <button id="tut-skip" type="button">Skip Tutorial</button>
-        <button id="tut-next" type="button">Susunod &rarr;</button>
+        <button id="tut-next" type="button">Next &rarr;</button>
       </div>
     </div>
 
-    <!-- Answer / Change Feedback Banner -->
+    <!-- Wrong / Retry Feedback Toast -->
     <div id="feedback" hidden>
       <div id="feedback-text"></div>
-      <button id="feedback-btn" type="button" hidden>Susunod &rarr;</button>
+      <button id="feedback-btn" type="button" hidden>Next &rarr;</button>
+    </div>
+
+    <!-- Fade-to-Black Stop Transition Curtain & Endless Day Banner -->
+    <div id="fade-curtain">
+      <div id="day-banner" hidden>
+        <div id="day-banner-title">DAY 2</div>
+        <div id="day-banner-sub">NEW JUMBLED ROUTE!</div>
+      </div>
     </div>
 
     <!-- MENU & Settings Modal -->
@@ -186,10 +163,8 @@
         <div class="modal-btns">
           <button type="button" data-start-stage="tutorial">Replay Tutorial (Level 0)</button>
           <button id="menu-restart-stage" type="button" data-start-stage="level1">Restart Level 1</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=gamemode'">Choose
-            Gamemode</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=menu'">Back to Main
-            Menu</button>
+          <button type="button" class="secondary" onclick="location.href='./login.html?section=gamemode'">Choose Gamemode</button>
+          <button type="button" class="secondary" onclick="location.href='./login.html?section=menu'">Back to Main Menu</button>
           <button id="menu-close" type="button" class="secondary">Resume Game</button>
         </div>
         <div class="meta-footer">
@@ -202,7 +177,7 @@
     <!-- Post-Game Screen Modal -->
     <div id="modal-postgame" class="modal-backdrop" hidden>
       <div class="modal-card">
-        <h2 id="pg-title">Handa ka na!</h2>
+        <h2 id="pg-title">You're Ready!</h2>
         <p id="pg-body"></p>
         <div id="pg-stats" hidden>
           <div class="setting-row"><span>Score Earned:</span><b id="pg-score">0</b></div>
@@ -210,13 +185,12 @@
         </div>
         <div class="modal-btns">
           <button id="pg-primary" type="button">Start Level 1</button>
-          <button id="pg-menu" type="button" class="secondary">Menu / Stage Select</button>
+          <button id="pg-menu" type="button" class="secondary">Back to Main Menu</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="../js/game/main.js?v=2"></script>
+  <script type="module" src="../js/game/main.js?v=20"></script>
 </body>
-
 </html>
