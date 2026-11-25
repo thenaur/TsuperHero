@@ -2,7 +2,7 @@
 import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=22';
 import { fitStage } from './layout.js?v=8';
 import { Emitter } from './emitter.js?v=8';
-import { Play, setAnimationsFrozen } from './play.js?v=24';
+import { Play, setAnimationsFrozen } from './play.js?v=25';
 import { TutorialGuide } from './tutorial.js?v=21';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
