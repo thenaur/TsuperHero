@@ -1,8 +1,8 @@
 // Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
-import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=21';
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=22';
 import { fitStage } from './layout.js?v=8';
 import { Emitter } from './emitter.js?v=8';
-import { Play } from './play.js?v=21';
+import { Play, setAnimationsFrozen } from './play.js?v=24';
 import { TutorialGuide } from './tutorial.js?v=21';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
@@ -27,6 +27,7 @@ function startStage(stageId) {
 
   $('modal-postgame').hidden = true;
   $('modal-menu').hidden = true;
+  setAnimationsFrozen(false);
 
   let stage;
   try {
@@ -124,11 +125,13 @@ async function handleStageEnd(summary) {
 // Menu & settings bindings
 $('btn-menu').onclick = () => {
   sfx('tap');
+  setAnimationsFrozen(true);
   $('modal-menu').hidden = false;
 };
 $('menu-close').onclick = () => {
   sfx('tap');
   $('modal-menu').hidden = true;
+  setAnimationsFrozen(false);
 };
 $('pg-menu').onclick = () => {
   sfx('tap');
@@ -162,6 +165,11 @@ $('set-sfx').onchange = (e) => {
 // Boot: load profile (or guest mode) and launch requested stage
 (async function boot() {
   const urlStage = new URLSearchParams(location.search).get('stage');
+  if (urlStage && urlStage.startsWith('endless-')) {
+    // Go directly to black screen with zero delay before async profile init completes
+    const curtain = $('fade-curtain');
+    if (curtain) curtain.classList.add('instant', 'dark');
+  }
   await initProgress();
   const st = getState();
   $('account-badge').textContent = st.uid
