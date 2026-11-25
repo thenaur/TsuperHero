@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STAGES, ROUTES, ENDLESS_STOPS, DENOMS, MAX_PAYMENT, LEVEL_ORDER, getStage } from '../js/game/data.js';
-import { mulberry32, validateRoute, fareOf, makePassenger, fixedPassenger, jumbleRoute } from '../js/game/logic.js';
+import { mulberry32, validateRoute, fareOf, upcomingStops, makePassenger, fixedPassenger, jumbleRoute } from '../js/game/logic.js';
 import { createRun } from '../js/game/session.js';
 import { breakdown } from '../js/game/money.js';
 import { pesoWord, amountWord } from '../js/game/numbers.js';
@@ -156,18 +156,30 @@ test('patience timeout removes 1 heart and ends run when hearts hit 0', () => {
 
 test('Endless jumbles the 5 stops and switches to Day 2, Day 3, ... when reaching final stop with lives', () => {
   for (const id of ['endless-easy', 'endless-medium', 'endless-hard']) {
-    const run = createRun(getStage(id), { rng: mulberry32(99) });
+    const stage = getStage(id);
+    const denoms = denomsFor(stage);
+    const run = createRun(stage, { rng: mulberry32(99) });
     run.start();
     assert.equal(run.day, 1);
     assert.equal(run.route.stops[0], 'Terminal');
     assert.deepEqual(run.route.stops.slice(1).slice().sort(), ENDLESS_STOPS.slice().sort());
 
     const dayOrders = new Set([run.route.stops.slice(1).join(',')]);
-    // Arrive through 5 stops -> switches to Day 2, then 5 more -> Day 3, then Day 4
+    // Serve active passenger before arriving through 5 stops -> Day 2, 5 more -> Day 3, 5 more -> Day 4
     for (let step = 0; step < 15; step++) {
+      if (run.phase === 'question') run.answer(run.current.question.answer);
+      if (run.phase === 'paying') {
+        if (run.current.change === 0) {
+          run.submit(true);
+        } else {
+          for (const d of breakdown(run.current.change, denoms)) run.addMoney(d);
+          run.submit(false);
+        }
+      }
       run.arrive();
       assert.equal(run.route.stops[0], 'Terminal');
       assert.deepEqual(run.route.stops.slice(1).slice().sort(), ENDLESS_STOPS.slice().sort());
+      assert.ok(run.current.dest > run.stopIdx, 'new passenger destination must be strictly ahead of current origin');
       dayOrders.add(run.route.stops.slice(1).join(','));
     }
     assert.equal(run.day, 4);
@@ -277,4 +289,77 @@ test('hints: limited per level, none in Level 3', () => {
   assert.ok(used <= 3);
   const l3 = createRun(STAGES.level3);
   assert.equal(l3.hintsLeft, 0);
+});
+
+test('origin stop and passed stops can never be picked as a passenger destination', () => {
+  for (const id of ALL_STAGES) {
+    const stage = getStage(id);
+    const n = stage.route.stops.length;
+    for (let origin = 0; origin < n - 1; origin++) {
+      const up = upcomingStops(stage.route, origin);
+      assert.ok(up.length > 0, `${id} origin ${origin} should have upcoming stops`);
+      for (const idx of up) {
+        assert.ok(idx > origin && idx < n);
+        assert.notEqual(stage.route.stops[idx], stage.route.stops[origin]);
+      }
+      for (let seed = 1; seed <= 50; seed++) {
+        const p = makePassenger(mulberry32(seed), stage, origin);
+        assert.equal(p.board, origin);
+        assert.ok(p.dest > origin, `${id} origin ${origin} picked dest ${p.dest}`);
+        assert.notEqual(stage.route.stops[p.dest], stage.route.stops[origin]);
+      }
+    }
+    assert.deepEqual(upcomingStops(stage.route, n - 1), []);
+    assert.throws(() => makePassenger(mulberry32(1), stage, n - 1));
+  }
+});
+
+test('patience timer is always noticeably faster than leg duration on every timed stage', () => {
+  for (const id of [...LEVEL_ORDER, 'endless-easy', 'endless-medium', 'endless-hard']) {
+    const stage = getStage(id);
+    assert.ok(stage.patienceSec > 0, `${id} should have patience timer`);
+    assert.ok(
+      stage.legSeconds - stage.patienceSec >= 15,
+      `${id} patienceSec (${stage.patienceSec}) must be noticeably faster than legSeconds (${stage.legSeconds})`
+    );
+  }
+});
+
+test('anti-stall safeguard: arriving with an unanswered or unpaid passenger deducts 1 life and resets streak', () => {
+  const stage = STAGES.level3; // 3 lives, 5 stops
+  const denoms = denomsFor(stage);
+  const run = createRun(stage, { rng: mulberry32(42) });
+  run.start();
+
+  // Serve first passenger cleanly on leg 0 to build streak = 1, then arrive cleanly at stop 1
+  if (run.phase === 'question') run.answer(run.current.question.answer);
+  if (run.current.change === 0) run.submit(true);
+  else {
+    for (const d of breakdown(run.current.change, denoms)) run.addMoney(d);
+    run.submit(false);
+  }
+  assert.equal(run.streak, 1);
+  assert.equal(run.lives, 3);
+  run.arrive();
+  assert.equal(run.lastMissedOnArrival, false);
+  assert.equal(run.lives, 3);
+  assert.equal(run.streak, 1);
+  assert.equal(run.stopIdx, 1);
+  assert.ok(run.current.dest > 1, 'after arriving at stop 1, new passenger must go past stop 1');
+
+  // Now stall on leg 1 without serving anyone -> arrive() triggers missed-passenger penalty!
+  assert.ok(run.phase === 'question' || run.phase === 'paying');
+  run.arrive();
+  assert.equal(run.lastMissedOnArrival, true);
+  assert.equal(run.lives, 2);
+  assert.equal(run.streak, 0);
+  assert.equal(run.stopIdx, 2);
+  assert.ok(run.current.dest > 2, 'after arriving at stop 2, new passenger must go past stop 2');
+
+  // Stall 2 more legs -> lives hit 0 -> run fails instead of completing
+  run.arrive();
+  assert.equal(run.lives, 1);
+  const finalPhase = run.arrive();
+  assert.equal(finalPhase, 'failed');
+  assert.equal(run.lives, 0);
 });

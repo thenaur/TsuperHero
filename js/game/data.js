@@ -113,25 +113,25 @@ export const STAGES = {
   level1: {
     id: 'level1', name: 'Level 1', route: ROUTES.level1, lives: 5, hints: 3, passengers: 8,
     maxGroup: 2, pay: 'bills', bills: [2000, 5000], vocab: VOCAB_L1, qProb: 0.28,
-    centavos: false, mult: 1, legSeconds: 42, patienceSec: 36, next: 'level2',
+    centavos: false, mult: 1, legSeconds: 42, patienceSec: 26, next: 'level2',
   },
   level2: {
     id: 'level2', name: 'Level 2', route: ROUTES.level2, lives: 4, hints: 3, passengers: 10,
     maxGroup: 3, pay: 'bills', bills: [2000, 5000, 10000], vocab: VOCAB_L2, qProb: 0.3,
-    centavos: false, mult: 1, legSeconds: 40, patienceSec: 32, next: 'level3',
+    centavos: false, mult: 1, legSeconds: 40, patienceSec: 24, next: 'level3',
   },
   level3: {
     id: 'level3', name: 'Level 3', route: ROUTES.level3, lives: 3, hints: 0, passengers: 12,
     maxGroup: 3, pay: 'bills', bills: [2000, 5000, 10000, 20000], vocab: VOCAB_L2, qProb: 0.3,
-    centavos: false, mult: 1, legSeconds: 36, patienceSec: 28, next: null,
+    centavos: false, mult: 1, legSeconds: 36, patienceSec: 21, next: null,
   },
 };
 export const LEVEL_ORDER = ['level1', 'level2', 'level3'];
 
 export const DIFFICULTIES = {
-  easy: { label: 'Easy', route: ROUTES.endlessEasy, pay: 'easy', maxGroup: 3, qProb: 0.22, mult: 1, centavos: false, legSeconds: 40, patienceSec: 34 },
-  medium: { label: 'Medium', route: ROUTES.endlessMedium, pay: 'medium', maxGroup: 4, qProb: 0.28, mult: 1.5, centavos: false, legSeconds: 36, patienceSec: 30 },
-  hard: { label: 'Hard', route: ROUTES.endlessHard, pay: 'hard', maxGroup: 4, qProb: 0.3, mult: 2, centavos: true, legSeconds: 34, patienceSec: 26 },
+  easy: { label: 'Easy', route: ROUTES.endlessEasy, pay: 'easy', maxGroup: 3, qProb: 0.22, mult: 1, centavos: false, legSeconds: 42, patienceSec: 25 },
+  medium: { label: 'Medium', route: ROUTES.endlessMedium, pay: 'medium', maxGroup: 4, qProb: 0.28, mult: 1.5, centavos: false, legSeconds: 40, patienceSec: 23 },
+  hard: { label: 'Hard', route: ROUTES.endlessHard, pay: 'hard', maxGroup: 4, qProb: 0.3, mult: 2, centavos: true, legSeconds: 38, patienceSec: 21 },
 };
 
 export function getStage(id) {
