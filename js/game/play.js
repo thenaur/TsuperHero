@@ -669,8 +669,8 @@ export class Play {
     sfx(a.correct ? 'correct' : 'wrong');
     this.render(true);
     if (!a.correct) {
-      this.showFeedback(`"${capitalize(pesoWord(a.value))}" is ₱${a.value}. Correct fare: ₱${a.answer}.`, 'bad');
-      this.feedbackTimer = this.later(1800, () => this.hideFeedback());
+      this.showFeedback(`Correct fare: ₱${a.answer}`, 'bad');
+      this.feedbackTimer = this.later(1500, () => this.hideFeedback());
     }
     this.emit('answer', a);
   }
@@ -689,6 +689,40 @@ export class Play {
     if (!this.isAtStopScene) this.render();
   }
 
+  triggerHeartLoss(targetEl = null) {
+    const livesEl = $('hud-lives');
+    if (livesEl) {
+      livesEl.classList.remove('hurt');
+      void livesEl.offsetWidth;
+      livesEl.classList.add('hurt');
+      this.later(400, () => livesEl.classList.remove('hurt'));
+
+      const icons = livesEl.querySelectorAll('.heart-icon');
+      const lostIdx = Math.max(0, Math.min(icons.length - 1, this.run.lives));
+      const lostIcon = icons[lostIdx];
+      let popLeft = livesEl.clientWidth - 24;
+      if (lostIcon) {
+        lostIcon.classList.remove('just-lost');
+        void lostIcon.offsetWidth;
+        lostIcon.classList.add('just-lost');
+        this.later(420, () => lostIcon.classList.remove('just-lost'));
+        popLeft = lostIcon.offsetLeft + lostIcon.offsetWidth / 2;
+      }
+
+      const pop = el('span', { class: 'heart-loss-pop', text: '-1 ♥' });
+      pop.style.left = `${popLeft}px`;
+      livesEl.append(pop);
+      this.later(1000, () => pop.remove());
+    }
+
+    if (targetEl) {
+      targetEl.classList.remove('hurt-shake');
+      void targetEl.offsetWidth;
+      targetEl.classList.add('hurt-shake');
+      this.later(400, () => targetEl.classList.remove('hurt-shake'));
+    }
+  }
+
   handleTimeout() {
     if (this.isAtStopScene) return;
     const res = this.run.timeout();
@@ -697,8 +731,10 @@ export class Play {
     this.setHint(false);
     if (res.livesLeft <= 0) this.progressPaused = true;
     this.render();
-    const lost = res.livesLeft > 0 ? '\nYou lost 1 heart.' : '\nNo hearts left!';
-    this.showFeedback(`Too slow! The passenger got impatient.${lost}`, 'bad', true);
+    this.triggerHeartLoss($('timer-bar-wrap'));
+    this.showFeedback('Too slow!', 'bad');
+    this.cancel(this.advanceTimer);
+    this.advanceTimer = this.later(res.livesLeft <= 0 ? 1050 : 1200, () => this.advance());
   }
 
   submit(exact) {
@@ -710,7 +746,7 @@ export class Play {
       sfx('wrong');
       this.render();
       this.showFeedback('Wrong change! Try again!', 'bad');
-      this.feedbackTimer = this.later(1600, () => this.hideFeedback());
+      this.feedbackTimer = this.later(1500, () => this.hideFeedback());
       return;
     }
 
@@ -731,8 +767,10 @@ export class Play {
       this.advanceTimer = this.later(850, () => this.advance());
     } else {
       sfx('wrong');
-      const lost = res.livesLeft > 0 ? '\nYou lost 1 heart.' : '\nNo hearts left!';
-      this.showFeedback(`Wrong change! Correct change: ₱${formatAmount(res.expected)}.\nYou gave: ₱${formatAmount(res.given)}.${lost}`, 'bad', true);
+      this.triggerHeartLoss($('payment-box'));
+      this.showFeedback(`Wrong change! Exact change: ₱${formatAmount(res.expected)}`, 'bad');
+      this.cancel(this.advanceTimer);
+      this.advanceTimer = this.later(res.livesLeft <= 0 ? 1100 : 1350, () => this.advance());
     }
   }
 
