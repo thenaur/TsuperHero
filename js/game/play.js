@@ -18,6 +18,7 @@ const ROAD_LOOP_SRC = '../assets/RoadLoop.gif';
 const FADE_MS = 500;
 const THANK_YOU_MS = 3400;
 const DAY_BANNER_MS = 2000;
+const STOP_APPROACH_CUTOFF_SEC = 8; // Stop spawning new passengers in the final seconds before a stop
 const ROUTE_PIXEL_STEP = 4; // snap jeepney & yellow progress bar in 4px art-pixel steps
 const TIMER_PIXEL_STEP = 6; // snap passenger timer bar in 6px art-pixel steps
 
@@ -94,6 +95,7 @@ export class Play {
     this.panel = null;
     this.lastBubbleText = '';
     this.isAtStopScene = false;
+    this.coastingToStop = false;
 
     // Continuous route progress bar state (0.0 -> 1.0 across stops, snapped to pixel steps)
     this.routePct = 0;
@@ -115,6 +117,7 @@ export class Play {
   start() {
     this.run.start();
     this.routePct = 0;
+    this.coastingToStop = false;
     this.resetPatience();
     this.setRoadMoving(true);
     this.updateRouteBarVisual(0);
@@ -254,6 +257,14 @@ export class Play {
     return base;
   }
 
+  remainingLegSeconds() {
+    const segs = Math.max(1, this.run.route.stops.length - 1);
+    const segSize = 1 / segs;
+    const targetNext = Math.min(1, (this.run.stopIdx + 1) * segSize);
+    const speed = segSize / this.currentLegSeconds();
+    return Math.max(0, (targetNext - this.routePct) / speed);
+  }
+
   resetPatience() {
     this.patienceMax = this.stage.patienceSec || 0;
     this.patienceLeft = this.patienceMax;
@@ -294,7 +305,7 @@ export class Play {
 
       if (!paused) {
         // 1. Drain passenger patience timer in Normal & Endless while waiting for player input
-        if (this.patienceMax > 0 && (this.run.phase === 'question' || this.run.phase === 'paying')) {
+        if (!this.coastingToStop && this.patienceMax > 0 && (this.run.phase === 'question' || this.run.phase === 'paying')) {
           this.patienceLeft = Math.max(0, this.patienceLeft - dt);
           this.updateTimerBarVisual();
           if (this.patienceLeft <= 0) {
@@ -367,6 +378,7 @@ export class Play {
   arriveAtDestinationStop() {
     if (this.isAtStopScene || this.ended) return;
     this.isAtStopScene = true;
+    this.coastingToStop = false;
     this.progressPaused = true;
     this.cancel(this.advanceTimer);
     this.advanceTimer = null;
@@ -728,6 +740,22 @@ export class Play {
     this.cancel(this.advanceTimer);
     this.advanceTimer = null;
     if (this.isAtStopScene) return;
+    // If the player ran out of hearts, end the run immediately instead of coasting to the stop
+    if (!this.run.practice && this.run.lives <= 0) {
+      const phase = this.run.next();
+      this.hideFeedback();
+      if (phase === 'failed' || phase === 'gameover') return this.end();
+      return;
+    }
+    // Stop-approach cutoff: don't spawn a new passenger in the last few seconds before a stop
+    if (this.tutorialStartedMoving && this.remainingLegSeconds() <= STOP_APPROACH_CUTOFF_SEC) {
+      this.hideFeedback();
+      this.setHint(false);
+      this.coastingToStop = true;
+      this.resetPatience();
+      this.render(false);
+      return;
+    }
     const phase = this.run.next();
     if (!phase) return;
     this.hideFeedback();
@@ -821,43 +849,53 @@ export class Play {
     $('hud-streak').textContent = run.streak;
     $('hint-count').textContent = run.hintsLeft;
 
-    // Passenger dialogue bubble (strictly passenger speech — never system "Correct!" text)
-    let speech = '';
-    if (p) {
-      const destUpper = stops[p.dest].toUpperCase();
-      const countUpper = COUNT_WORDS[p.count].toUpperCase();
-      if (phase === 'question') {
-        speech = p.count === 1
-          ? `MAGKANO PO PAPUNTANG ${destUpper}?`
-          : `MAGKANO PO PARA SA ${countUpper} PAPUNTANG ${destUpper}?`;
-      } else {
-        speech = `${countUpper} PO PAPUNTANG ${destUpper}, BAYAD PO! (${amountWord(p.payment).toUpperCase()})`;
+    // While coasting into an upcoming stop, keep the speech bubble and payment controls cleared
+    if (this.coastingToStop) {
+      this.showBubbleText('');
+      $('choices').hidden = true;
+      $('paid-amount').textContent = '';
+      $('given-amount').textContent = '';
+      for (const id of ['btn-suklian', 'btn-sakto', 'btn-undo', 'btn-clear']) $(id).disabled = true;
+      for (const b of document.querySelectorAll('#tray-box .money')) b.disabled = true;
+    } else {
+      // Passenger dialogue bubble (strictly passenger speech — never system "Correct!" text)
+      let speech = '';
+      if (p) {
+        const destUpper = stops[p.dest].toUpperCase();
+        const countUpper = COUNT_WORDS[p.count].toUpperCase();
+        if (phase === 'question') {
+          speech = p.count === 1
+            ? `MAGKANO PO PAPUNTANG ${destUpper}?`
+            : `MAGKANO PO PARA SA ${countUpper} PAPUNTANG ${destUpper}?`;
+        } else {
+          speech = `${countUpper} PO PAPUNTANG ${destUpper}, BAYAD PO! (${amountWord(p.payment).toUpperCase()})`;
+        }
       }
+      this.showBubbleText(speech, '', forcePop);
+
+      // Fare question choices + pixel-art "?" hint button
+      const asking = phase === 'question';
+      $('choices').hidden = !asking;
+      if (asking) {
+        const btns = document.querySelectorAll('#choices .choice');
+        p.question.options.forEach((v, i) => {
+          btns[i].dataset.value = v;
+          btns[i].textContent = this.hintOn ? `₱${v}` : pesoWord(v).toUpperCase();
+        });
+        $('btn-hint').disabled = this.hintOn || run.hintsLeft <= 0;
+      }
+
+      // Payment & change display (SukliContainer)
+      const paying = phase === 'paying';
+      const showPaid = p && (phase === 'paying' || phase === 'result');
+      $('paid-amount').textContent = showPaid ? formatDisplayMoney(p.payment, this.stage.centavos) : asking ? '—' : '';
+      $('given-amount').textContent = paying || phase === 'result' ? formatDisplayMoney(run.givenTotal, this.stage.centavos) : '';
+
+      for (const id of ['btn-suklian', 'btn-sakto']) $(id).disabled = !paying;
+      $('btn-undo').disabled = !paying || !run.given.length;
+      $('btn-clear').disabled = !paying || !run.given.length;
+      for (const b of document.querySelectorAll('#tray-box .money')) b.disabled = !paying;
     }
-    this.showBubbleText(speech, '', forcePop);
-
-    // Fare question choices + pixel-art "?" hint button
-    const asking = phase === 'question';
-    $('choices').hidden = !asking;
-    if (asking) {
-      const btns = document.querySelectorAll('#choices .choice');
-      p.question.options.forEach((v, i) => {
-        btns[i].dataset.value = v;
-        btns[i].textContent = this.hintOn ? `₱${v}` : pesoWord(v).toUpperCase();
-      });
-      $('btn-hint').disabled = this.hintOn || run.hintsLeft <= 0;
-    }
-
-    // Payment & change display (SukliContainer)
-    const paying = phase === 'paying';
-    const showPaid = p && (phase === 'paying' || phase === 'result');
-    $('paid-amount').textContent = showPaid ? formatDisplayMoney(p.payment, this.stage.centavos) : asking ? '—' : '';
-    $('given-amount').textContent = paying || phase === 'result' ? formatDisplayMoney(run.givenTotal, this.stage.centavos) : '';
-
-    for (const id of ['btn-suklian', 'btn-sakto']) $(id).disabled = !paying;
-    $('btn-undo').disabled = !paying || !run.given.length;
-    $('btn-clear').disabled = !paying || !run.given.length;
-    for (const b of document.querySelectorAll('#tray-box .money')) b.disabled = !paying;
 
     // Highlight active stop & taripa row
     for (const d of document.querySelectorAll('#progress-stops .stop-dot')) {
