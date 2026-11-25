@@ -17,6 +17,23 @@ export const PIN_RULE = /^\d{4}$/;
 const toEmail = (nick) => `${nick.toLowerCase()}@${EMAIL_DOMAIN}`;
 const toPassword = (pin) => PIN_PREFIX + pin;
 
+function isOfflineError(err) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  return !!(err && err.code === "auth/network-request-failed");
+}
+
+function isDomainOrKeyError(err) {
+  const code = String((err && err.code) || "").toLowerCase();
+  const msg = String((err && err.message) || "").toLowerCase();
+  return (
+    code.includes("referer") ||
+    msg.includes("referer") ||
+    code === "auth/unauthorized-domain" ||
+    code === "auth/api-key-not-valid" ||
+    code === "auth/app-not-authorized"
+  );
+}
+
 function getLocalAccounts() {
   try {
     return JSON.parse(localStorage.getItem(LOCAL_ACCOUNTS_KEY) || "{}");
@@ -38,8 +55,14 @@ export function validate(nick, pin) {
   return null;
 }
 
-// Turn Firebase error codes into messages a child can understand.
+// Turn Firebase error codes into clear, actionable messages.
 export function friendlyError(err) {
+  if (typeof location !== "undefined" && location.protocol === "file:") {
+    return "Open the game through a local server (http://127.0.0.1:8000), not by double-clicking the HTML file.";
+  }
+  if (isDomainOrKeyError(err)) {
+    return "Cloud sign-in is blocked on this URL/port. Use http://127.0.0.1:8000 or http://localhost:8000 (or allow this port in Google Cloud).";
+  }
   switch (err && err.code) {
     case "auth/email-already-in-use":
       return "That nickname is already taken. Try another one.";
@@ -48,15 +71,19 @@ export function friendlyError(err) {
     case "auth/wrong-password":
       return "Wrong nickname or PIN.";
     case "auth/network-request-failed":
-      return "No internet connection. You can still play, but progress cannot be saved.";
+      return "No internet connection. You can still play offline, but cloud sync is paused.";
     case "auth/too-many-requests":
       return "Too many tries. Please wait a moment and try again.";
+    case "auth/operation-not-allowed":
+      return "Email/Password sign-in is disabled in Firebase Console.";
     default:
-      return "Something went wrong. Please try again.";
+      return "Could not connect to Firebase. Please check the browser console and try again.";
   }
 }
 
-// Each returns { uid, profile }. Falls back to local offline account if network/Firebase fails.
+// Each returns { uid, profile }.
+// Only falls back to localStorage when genuinely offline (auth/network-request-failed) —
+// never silently swallows domain/port or API-key blocks!
 export async function signUp(nick, pin) {
   const problem = validate(nick, pin);
   if (problem) throw { code: "app/invalid-input", message: problem };
@@ -65,8 +92,11 @@ export async function signUp(nick, pin) {
     const profile = await createProfile(cred.user.uid, nick);
     return { uid: cred.user.uid, profile };
   } catch (err) {
-    // Only fall back to local storage if it is a network/server reachability error, not a duplicate nickname
-    if (err && (err.code === "auth/email-already-in-use" || err.code === "app/invalid-input")) throw err;
+    if (!isOfflineError(err)) {
+      console.error("[auth] Firebase signUp failed:", err && err.code, err && err.message);
+      throw err;
+    }
+    console.warn("[auth] Offline — creating local-only account fallback:", err && err.code);
     const key = nick.toLowerCase();
     const accounts = getLocalAccounts();
     if (accounts[key]) throw { code: "auth/email-already-in-use" };
@@ -87,18 +117,11 @@ export async function logIn(nick, pin) {
     const profile = await loadProfile(cred.user.uid, nick);
     return { uid: cred.user.uid, profile };
   } catch (err) {
-    if (err && (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password")) {
-      // Also check if this account was created in local fallback mode
-      const key = nick.toLowerCase();
-      const accounts = getLocalAccounts();
-      if (accounts[key] && accounts[key].pin === pin) {
-        const uid = accounts[key].uid;
-        const profile = await loadProfile(uid, accounts[key].nick);
-        try { sessionStorage.setItem("tsuperhero.activeLocalUid", uid); } catch {}
-        return { uid, profile, offline: true };
-      }
+    if (!isOfflineError(err)) {
+      console.error("[auth] Firebase logIn failed:", err && err.code, err && err.message);
       throw err;
     }
+    console.warn("[auth] Offline — trying local account fallback:", err && err.code);
     const key = nick.toLowerCase();
     const accounts = getLocalAccounts();
     if (!accounts[key] || accounts[key].pin !== pin) throw err;
