@@ -1,18 +1,27 @@
+/* =====================================================================
+   TsuperHero – Exact Pixel-Art Driver-POV Layout (1280x720 scaled)
+   Calibrated to the newly tight-cropped UI assets and reference mockup,
+   with custom pixel-art hearts.png & speech.png, Sample C timer bar,
+   and Sample C dynamic bottom route progress bar.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+
 * {
   box-sizing: border-box;
   user-select: none;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #141923;
-  font-family: 'Courier New', Courier, monospace;
+  background: #141016;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
   color: #111;
+  image-rendering: pixelated;
 }
 
 #stage {
@@ -22,18 +31,68 @@ body {
   width: 1280px;
   height: 720px;
   transform-origin: 0 0;
-  background: #f5f5f0;
+  background: #141016;
   overflow: hidden;
   image-rendering: pixelated;
 }
 
-/* ---- Top Bar (Stage / Lives / Score / MENU button) ---- */
+/* ---- Layer 1: Scrolling Road / Destination Still Frame ---- */
+#windshield {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 664px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#road-img {
+  position: absolute;
+  top: 30px;
+  left: 58px;
+  width: 1164px;
+  height: 468px;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+/* ---- Layer 2: Jeepney Interior & Steering Wheel Overlay ---- */
+#jeep-interior {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 664px;
+  object-fit: fill;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 4;
+}
+
+/* ---- Layer 3: Animated Driver Left Hand on Steering Wheel ---- */
+#driver-hand {
+  position: absolute;
+  left: 0;
+  top: 340px;
+  width: 304px;
+  height: 336px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 6;
+}
+
+#driver-hand.stopped {
+  transform: translateY(2px);
+}
+
+/* ---- Top Gray Header Bar (SCORE, STREAK, ?x3, MENU) ---- */
 #top-bar {
   position: absolute;
-  top: 8px;
-  left: 72px;
-  right: 72px;
-  height: 44px;
+  top: 6px;
+  left: 84px;
+  right: 8px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -43,290 +102,185 @@ body {
 .hud-left {
   display: flex;
   align-items: center;
+  gap: 88px;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.hud-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-stat[hidden] {
+  display: none !important;
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
   gap: 14px;
-  font-weight: bold;
+}
+
+#hud-hint-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 0.5px;
+}
+
+#hud-hint-top .hint-x {
+  color: #ffd23f;
   font-size: 18px;
 }
 
-.hud-pill {
-  background: #fff;
-  border: 3px solid #111;
-  padding: 4px 12px;
-  box-shadow: 2px 2px 0 #111;
-}
-
-#hud-lives {
-  color: #d62828;
-  font-size: 22px;
-  letter-spacing: 3px;
-}
-
-.stage-QuickSwitch {
-  display: flex;
-  gap: 6px;
-}
-
-.stage-QuickSwitch button {
-  font-family: inherit;
-  font-weight: bold;
-  font-size: 14px;
-  padding: 5px 10px;
-  background: #e5e5e0;
-  border: 2px solid #111;
-  cursor: pointer;
-}
-
-.stage-QuickSwitch button.active {
-  background: #ffd166;
+#hud-hint-top[hidden] {
+  display: none !important;
 }
 
 #btn-menu {
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: bold;
-  width: 148px;
-  height: 42px;
-  background: #fff;
-  border: 3px solid #111;
-  box-shadow: 3px 3px 0 #111;
+  position: relative;
+  border: none;
+  background: transparent;
+  width: 138px;
+  height: 32px;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 15px;
+  color: #111;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+#btn-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/BareButton.png") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
+  z-index: -1;
+}
+
+#btn-menu:hover::before {
+  left: -3.03%;
+  right: -3.03%;
+  top: -18.75%;
+  bottom: -18.75%;
+  background-image: url("../assets/ButtonHighlight.png");
 }
 
 #btn-menu:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 #111;
+  transform: translateY(3px) scale(0.98);
+  filter: brightness(0.68);
 }
 
-/* ---- Windshield / Perspective Road Frame ---- */
-#windshield {
-  position: absolute;
-  top: 56px;
-  left: 72px;
-  width: 1136px;
-  height: 470px;
-  background: #fff;
-  border: 3px solid #111;
-  overflow: hidden;
+#btn-menu:active::before {
+  inset: 0;
+  background-image: url("../assets/BareButtonPressed.png");
 }
 
-#road-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-#windshield.driving #road-lines {
-  animation: roadMove 0.45s linear infinite;
-}
-
-@keyframes roadMove {
-  from {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(24px);
-  }
-}
-
-/* ---- Rearview Mirror (Top-Center Passenger Prompt + Speech) ---- */
-#mirror-stem {
-  position: absolute;
-  top: 56px;
-  left: 636px;
-  width: 8px;
-  height: 22px;
-  background: #111;
-  z-index: 12;
-}
-
-#mirror-box {
-  position: absolute;
-  top: 78px;
-  left: 410px;
-  width: 460px;
-  min-height: 92px;
-  background: #fff;
-  border: 3px solid #111;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.18);
-  padding: 10px 14px;
-  z-index: 12;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-#passenger {
-  width: 66px;
-  height: 66px;
-  border: 2px solid #111;
-  background: #eef4ff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-#passenger::before {
-  content: '😊 ×' attr(data-count);
-  font-size: 18px;
-}
-
-#passenger.empty::before {
-  content: '🚐';
-  font-size: 24px;
-}
-
-.speech-wrap {
-  flex: 1;
-}
-
-#speech-text {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 1.3;
-  margin: 0;
-}
-
-#speech-note {
-  margin-top: 5px;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-#speech-note.good {
-  color: #1b7f37;
-}
-
-#speech-note.bad {
-  color: #c1121f;
-}
-
-/* ---- Commuter-lingo Question Prompt ("Magkano po?") ---- */
-#choices {
-  position: absolute;
-  top: 185px;
-  left: 410px;
-  width: 460px;
-  background: #fffbe6;
-  border: 3px solid #111;
-  box-shadow: 4px 4px 0 #111;
-  padding: 12px;
-  z-index: 15;
-  text-align: center;
-}
-
-.choices-title {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.choices-row {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.choice {
-  flex: 1;
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 10px 14px;
-  background: #ffd166;
-  border: 3px solid #111;
-  box-shadow: 2px 2px 0 #111;
-  cursor: pointer;
-}
-
-.choice:hover {
-  background: #ffca3a;
-}
-
-#btn-hint {
-  margin-top: 8px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: bold;
-  padding: 5px 12px;
-  background: #e0f2fe;
-  border: 2px solid #111;
-  cursor: pointer;
-}
-
-#btn-hint:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ---- Left Double-Chevron Tabs (Taripa & Salita ng Tsuper) ---- */
+/* ---- Top-Left Windshield Icons: Taripa & Salita ng Tsuper ---- */
 #side-tabs {
   position: absolute;
-  top: 190px;
-  left: 8px;
-  width: 64px;
+  top: 58px;
+  left: 84px;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 10px;
   z-index: 18;
 }
 
-.side-tab {
-  width: 64px;
-  min-height: 112px;
-  background: #fff;
-  border: 3px solid #111;
-  box-shadow: 3px 3px 0 #111;
-  font-family: inherit;
-  font-weight: bold;
+.icon-btn {
+  width: 68px;
+  height: 68px;
+  border: none;
+  background: transparent;
+  padding: 0;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 2px;
+  position: relative;
+  transition: transform 0.08s steps(2);
 }
 
-.side-tab .chev {
-  font-size: 28px;
-  line-height: 1;
+#tab-salita {
+  width: 84px;
+  height: 76px;
 }
 
-.side-tab .tab-lbl {
-  font-size: 11px;
-  writing-mode: horizontal-tb;
-  text-align: center;
+.icon-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
 }
 
-.side-tab.active {
-  background: #ffd166;
+/* Per-asset accent colors (--hi = light hover accent, --lo = dark clicked accent) */
+#tab-taripa { --hi: #f5e6c8; --lo: #7a2626; }
+#tab-salita { --hi: #ffe08a; --lo: #8a6424; }
+#btn-suklian { --hi: #7ee081; --lo: #164e1a; }
+#btn-sakto { --hi: #e5e7eb; --lo: #4b5563; }
+.choice { --hi: #e5e7eb; --lo: #4b5563; }
+.tray-tools button { --hi: #e5e7eb; --lo: #4b5563; }
+.money.b50 { --hi: #ffb3ba; --lo: #8c1d28; }
+.money.b100 { --hi: #d8b4fe; --lo: #4c1d95; }
+.money.c1 { --hi: #e2e8f0; --lo: #475569; }
+.money.c5 { --hi: #fde08d; --lo: #785614; }
+.money.c10 { --hi: #d4a373; --lo: #5c3a1a; }
+.money.c20 { --hi: #e5b88a; --lo: #5e3418; }
+.money.c025 { --hi: #f5cfa0; --lo: #7c4a1d; }
+
+.icon-btn:hover,
+.icon-btn.active {
+  transform: scale(1.06);
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+}
+
+.icon-btn:active {
+  transform: translateY(3px) scale(0.98);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
 }
 
 /* ---- Slide-out Drawer for Taripa / Salita ng Tsuper ---- */
 #drawer {
   position: absolute;
-  top: 76px;
-  left: 82px;
-  width: 520px;
-  max-height: 430px;
-  background: #fff;
-  border: 3px solid #111;
-  box-shadow: 6px 6px 0 #111;
+  top: 140px;
+  left: 84px;
+  width: 500px;
+  max-height: 360px;
+  background: #fdf6e3;
+  border: 4px solid #111;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
   padding: 14px 16px;
-  z-index: 25;
+  z-index: 26;
   overflow-y: auto;
+}
+
+#drawer[hidden] {
+  display: none !important;
 }
 
 .drawer-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #111;
+  border-bottom: 3px solid #111;
   padding-bottom: 8px;
   margin-bottom: 10px;
 }
@@ -336,24 +290,31 @@ body {
   font-size: 18px;
 }
 
-#drawer-close {
+.drawer-close {
   font-family: inherit;
-  font-weight: bold;
-  font-size: 16px;
-  background: #eee;
-  border: 2px solid #111;
+  font-size: 14px;
+  background: #ffd3ae;
+  border: 3px solid #111;
   padding: 3px 10px;
   cursor: pointer;
+}
+
+.drawer-close:hover {
+  background: #ffe4cc;
+}
+
+.drawer-close:active {
+  transform: translateY(2px);
+  background: #e5b48c;
 }
 
 #fare-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14px;
 }
 
-#fare-table th,
-#fare-table td {
+#fare-table th, #fare-table td {
   border: 2px solid #111;
   padding: 6px 8px;
   text-align: center;
@@ -374,370 +335,778 @@ body {
   margin: 0;
   padding-left: 20px;
   columns: 2;
-  font-size: 16px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.75;
 }
 
-/* ---- Top-Right Payment Display Box + SUKLIAN / SAKTO NA ---- */
+/* ---- Top-Right Payment Display Box (Tight-cropped SukliContainer.png 520x199) + SUKLIAN / SAKTO NA ---- */
 #payment-area {
   position: absolute;
-  top: 72px;
-  right: 28px;
-  width: 356px;
+  top: 44px;
+  left: 916px;
+  width: 306px;
   z-index: 16;
 }
 
 #payment-box {
-  background: #fff;
-  border: 3px solid #111;
-  padding: 12px;
-  box-shadow: 4px 4px 0 #111;
+  position: relative;
+  width: 306px;
+  height: 118px;
+  background: url("../assets/SukliContainer.png?v=10") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
 }
 
-.pay-split {
-  border: 3px solid #111;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: #fff;
-}
-
+/* Exact inner brown screens of newly cropped SukliContainer.png (520x199):
+   Left screen:  x=40..259  (7.69%, width 42.31%)
+   Right screen: x=270..479 (51.92%, width 40.38%)
+   Both screens: y=39..158  (19.60%, height 60.30%) */
 .pay-cell {
-  padding: 10px 12px;
-  text-align: center;
+  position: absolute;
+  top: 19.6%;
+  height: 60.3%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 4px 8px;
+  overflow: hidden;
 }
 
-.pay-cell+.pay-cell {
-  border-left: 3px solid #111;
+#pay-cell-bayad {
+  left: 7.7%;
+  width: 42.3%;
+}
+
+#pay-cell-sukli {
+  left: 51.9%;
+  width: 40.4%;
 }
 
 .pay-lbl {
-  font-size: 12px;
-  font-weight: bold;
-  color: #444;
-  text-transform: uppercase;
+  font-size: 10px;
+  color: #e6d7c3;
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 .pay-val {
-  font-size: 32px;
-  font-weight: bold;
-  margin-top: 4px;
-  letter-spacing: 1px;
-}
-
-#given-list {
-  min-height: 20px;
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: bold;
-  color: #333;
-  text-align: right;
-}
-
-.pay-tools {
+  flex: 1;
   display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.pay-tools button {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: bold;
-  padding: 3px 8px;
-  background: #f1f1f1;
-  border: 2px solid #111;
-  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .pay-actions {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
-  justify-content: center;
+  margin-top: 6px;
+  padding: 0 6px;
 }
 
-#btn-suklian,
-#btn-sakto {
+.pixel-action-btn {
   flex: 1;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: bold;
-  padding: 9px 10px;
-  border: 3px solid #111;
-  box-shadow: 3px 3px 0 #111;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 14px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.4px;
 }
 
 #btn-suklian {
-  background: #cbd5e1;
+  background-image: url("../assets/greenbutton.png");
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
 }
 
 #btn-sakto {
-  background: #84cc16;
+  background-image: url("../assets/graybutton.png");
+  color: #111;
 }
 
-#btn-suklian:disabled,
-#btn-sakto:disabled,
-.pay-tools button:disabled {
-  opacity: 0.45;
+.pixel-action-btn:hover:not(:disabled) {
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+}
+
+.pixel-action-btn:active:not(:disabled) {
+  transform: translateY(3px) scale(0.98);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
+}
+
+.pixel-action-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* ---- Route Progress Bar across Lower Windshield ---- */
-#route-bar {
+/* ---- Passenger Dynamic Pixel Speech Bubble (9-sliced assets/speech.png) ---- */
+#speech-area {
   position: absolute;
-  top: 446px;
-  left: 195px;
-  width: 890px;
-  height: 46px;
-  z-index: 14;
+  top: 212px;
+  left: 846px;
+  width: 376px;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+#speech-bubble {
+  position: relative;
+  width: fit-content;
+  min-width: 190px;
+  max-width: 376px;
+  min-height: 52px;
+  /* 9-slice scaling of speech.png (376x132, 16px corners) so pixel borders stay razor-sharp at ANY bubble size! */
+  border-style: solid;
+  border-width: 16px;
+  border-image-source: url("../assets/speech.png?v=10");
+  border-image-slice: 16 fill;
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+  padding: 2px 10px 4px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform-origin: right center;
+}
+
+#speech-bubble[hidden] {
+  display: none !important;
+}
+
+/* Stepped pixel pop-in animation */
+@keyframes pixelBubblePop {
+  0%   { opacity: 0; transform: scale(0.35) translateY(10px); }
+  35%  { opacity: 1; transform: scale(1.06) translateY(-2px); }
+  70%  { opacity: 1; transform: scale(0.97) translateY(1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#speech-bubble.pop-in {
+  animation: pixelBubblePop 300ms steps(4, end) forwards;
+}
+
+#speech-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: #1a1214;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+#speech-note {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+#speech-note:empty {
+  display: none;
+}
+
+#speech-note.good { color: #15803d; }
+#speech-note.bad { color: #b91c1c; }
+
+/* ---- Fare Question Choices ("BENTE" / "DIYES" + Yellow "?" Hint Button) ---- */
+#choices {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#choices[hidden] {
+  display: none !important;
+}
+
+.choice {
+  flex: 1;
+  height: 36px;
+  border: none;
+  background: url("../assets/graybutton.png") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #111;
+  cursor: pointer;
+}
+
+.choice:hover {
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+}
+
+.choice:active {
+  transform: translateY(3px) scale(0.98);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
+}
+
+#btn-hint {
+  --hi: #fff1a8;
+  --lo: #8a560b;
+  width: 34px;
+  height: 40px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btn-hint img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+}
+
+#btn-hint:hover:not(:disabled) {
+  transform: scale(1.08);
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+}
+
+#btn-hint:active:not(:disabled) {
+  transform: translateY(3px) scale(0.96);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
+}
+
+#btn-hint:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---- Custom Pixel Hearts (assets/hearts.png) & Sample C Timer Bar Above Money Box ---- */
+#status-above-tray {
+  position: absolute;
+  left: 808px;
+  top: 400px;
+  width: 432px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 16;
+}
+
+#hud-lives {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  min-height: 24px;
+}
+
+#hud-lives[hidden] {
+  display: none !important;
+}
+
+.heart-icon {
+  width: 28px;
+  height: 24px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.heart-icon.lost {
+  filter: grayscale(1) brightness(0.4);
+  opacity: 0.6;
+}
+
+/* Matching Sample C gold-and-espresso pixel timer bar right over MoneyContainer */
+#timer-bar-wrap {
+  position: relative;
+  width: 392px;
+  height: 13px;
+  margin-right: 10px;
+  background: #40302c;
+  border: 3px solid #120e12;
+  box-shadow: inset 0 2px 0 #261c1a, 2px 2px 0 rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+#timer-bar-wrap[hidden] {
+  display: none !important;
+}
+
+#timer-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: #48b848;
+  box-shadow: inset 0 3px 0 #8be878;
+}
+
+#timer-fill.warn {
+  background: #f6c442;
+  box-shadow: inset 0 3px 0 #ffec94;
+}
+
+#timer-fill.danger {
+  background: #dc2626;
+  box-shadow: inset 0 3px 0 #fca5a5;
+}
+
+/* ---- Bottom-Right Money Container (Tight-cropped MoneyContainer.png 898x379, seated on dashboard) ---- */
+#tray-box {
+  position: absolute;
+  left: 808px;
+  top: 450px;
+  width: 432px;
+  height: 182px;
+  background: url("../assets/MoneyContainer.png?v=10") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
+  z-index: 16;
+}
+
+/* Bills sit cleanly inside the exact dark recessed slot of MoneyContainer.png (16.59%..94.54%, y=13.19%..55.41%)
+   with breathing room so neither bill touches the inner black edges! */
+.tray-bills {
+  position: absolute;
+  left: 19%;
+  top: 17%;
+  width: 73%;
+  height: 34.5%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.money.bill {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  cursor: pointer;
+  padding: 0;
+}
+
+.money.b50 { background-image: url("../assets/Singkwenta.png"); }
+.money.b100 { background-image: url("../assets/IsangDaan.png"); }
+
+.money-tag {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0 3px;
+  pointer-events: none;
+}
+
+/* Tight-cropped coins aligned straight across the lower-left of MoneyContainer.png */
+.tray-coins {
+  position: absolute;
+  left: 16.5%;
+  top: 62%;
+  width: 55.5%;
+  height: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.money.coin {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  image-rendering: pixelated;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.money.c1 {
+  background-image: url("../assets/Piso.png?v=10");
+  width: 44px;
+  height: 44px;
+}
+.money.c5 {
+  background-image: url("../assets/Lima.png?v=10");
+  width: 50px;
+  height: 50px;
+}
+.money.c10 {
+  background-image: url("../assets/Sampo.png?v=10");
+  width: 50px;
+  height: 50px;
+}
+.money.c20 {
+  background-image: url("../assets/Bente.png?v=10");
+  width: 54px;
+  height: 54px;
+}
+.money.c025 {
+  background: #e8b478;
+  border: 3px solid #111;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+
+.money.coin .money-tag {
+  position: static;
+  font-size: 11px;
+  background: transparent;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+
+.money:hover:not(:disabled) {
+  transform: scale(1.06);
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+  z-index: 3;
+}
+
+.money:active:not(:disabled) {
+  transform: translateY(3px) scale(0.97);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
+  z-index: 3;
+}
+
+.money:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* UNDO and CLEAR aligned cleanly in the lower-right of MoneyContainer.png using graybutton.png */
+.tray-tools {
+  position: absolute;
+  right: 5.2%;
+  top: 62%;
+  width: 20.5%;
+  height: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tray-tools button {
+  width: 100%;
+  height: 24px;
+  border: none;
+  background-color: transparent;
+  background-image: url("../assets/graybutton.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #111;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.4px;
+}
+
+.tray-tools button:hover:not(:disabled) {
+  filter:
+    drop-shadow(2px 0 0 var(--hi))
+    drop-shadow(-2px 0 0 var(--hi))
+    drop-shadow(0 2px 0 var(--hi))
+    drop-shadow(0 -2px 0 var(--hi))
+    brightness(1.08);
+}
+
+.tray-tools button:active:not(:disabled) {
+  transform: translateY(3px) scale(0.97);
+  filter:
+    drop-shadow(2px 0 0 var(--lo))
+    drop-shadow(-2px 0 0 var(--lo))
+    drop-shadow(0 2px 0 var(--lo))
+    drop-shadow(0 -2px 0 var(--lo))
+    brightness(0.75);
+}
+
+.tray-tools button:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+/* ---- SAMPLE C Dynamic Bottom Route Progress Bar (y = 660..720) ---- */
+#bottom-route-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1280px;
+  height: 60px;
+  background: #20181a;
+  border-top: 4px solid #120c0e;
+  box-shadow: inset 0 4px 0 #ba8048;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 18px 0 18px;
+  z-index: 22;
+}
+
+.bottom-badge {
+  min-width: 146px;
+  height: 38px;
+  background: #40302c;
+  border: 4px solid #120c0e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #ffd64a;
+  text-shadow: 2px 2px 0 #000;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+#bottom-score-badge {
+  min-width: 204px;
+  color: #f5eee0;
+}
+
+#route-track-wrap {
+  position: relative;
+  flex: 1;
+  height: 50px;
+  margin: 0 44px;
 }
 
 .track-line {
   position: absolute;
-  top: 16px;
   left: 0;
   right: 0;
+  top: 12px;
   height: 12px;
-  background: #fff;
-  border: 3px solid #111;
-  border-radius: 6px;
+  background: #68646a;
+  border: 3px solid #120e12;
 }
 
 #progress-fill {
   height: 100%;
   width: 0%;
-  background: #f4c430;
+  background: #f6c442;
+  box-shadow: inset 0 3px 0 #ffec94;
+}
+
+#mini-jeepney {
+  position: absolute;
+  top: -13px;
+  left: 0%;
+  width: 54px;
+  height: 29px;
+  transform: translateX(-50%);
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 5;
 }
 
 #progress-stops {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
 }
 
 .stop-dot {
   position: absolute;
-  top: 4px;
-  width: 34px;
-  height: 34px;
-  margin-left: -17px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #111;
+  top: 5px;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  background: #c4c6cc;
+  border: 4px solid #120e12;
+  box-shadow: inset 3px 3px 0 #eef0f4;
+  z-index: 3;
 }
 
 .stop-dot.done {
-  background: #f4c430;
+  background: #da9836;
+  box-shadow: inset 3px 3px 0 #f8c666;
 }
 
 .stop-dot.here {
-  box-shadow: 0 0 0 4px rgba(244, 196, 48, 0.55);
+  background: #ffd64a;
+  box-shadow: inset 3px 3px 0 #fff6b2;
 }
 
 .stop-label {
   position: absolute;
-  top: 42px;
+  top: 32px;
   transform: translateX(-50%);
-  font-size: 13px;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 1px 6px;
-  border: 1px solid #111;
+  font-size: 12px;
+  color: #dad4ce;
+  text-shadow: 2px 2px 0 #000;
   white-space: nowrap;
 }
 
-/* ---- Bottom-Left Steering Wheel ---- */
-#steering-wheel {
+.stop-label.active-stop {
+  color: #ffd64a;
+}
+
+/* ---- Fade-to-Black Stop Transition Curtain & Endless Day Banner ---- */
+#fade-curtain {
   position: absolute;
-  left: 38px;
-  bottom: -230px;
-  width: 540px;
-  height: 540px;
-  border-radius: 50%;
-  border: 68px solid #fff;
-  outline: 3px solid #111;
-  box-shadow: inset 0 0 0 3px #111;
+  inset: 0;
+  background: #000;
+  opacity: 0;
   pointer-events: none;
-  z-index: 15;
-}
-
-/* ---- Bottom-Right Container of Bills and Coins ---- */
-#tray-box {
-  position: absolute;
-  right: 28px;
-  bottom: 18px;
-  width: 590px;
-  height: 176px;
-  background: #fff;
-  border: 3px solid #111;
-  box-shadow: 4px 4px 0 #111;
-  padding: 12px 16px;
-  z-index: 16;
-}
-
-#tray {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-}
-
-.tray-row.bills {
-  display: flex;
-  gap: 16px;
-  height: 70px;
-}
-
-.money.bill {
-  flex: 1;
-  border: 3px solid #111;
-  font-family: inherit;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 2px 2px 0 #111;
-}
-
-.money.b50 {
-  background: #ffb5b5;
-}
-
-.money.b100 {
-  background: #d8b4fe;
-}
-
-.tray-row.coins {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding-left: 8px;
-}
-
-.money.coin {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  border: 3px solid #111;
-  font-family: inherit;
-  font-size: 17px;
-  font-weight: bold;
-  cursor: pointer;
+  transition: opacity 480ms ease-in-out;
+  z-index: 38;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 #111;
 }
 
-.money.c1 {
-  background: #cbd5e1;
+#fade-curtain.dark {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.money.c5 {
-  background: #d4a72c;
-}
-
-.money.c10 {
-  background: #d4a72c;
-  box-shadow: inset 0 0 0 5px #cbd5e1, 2px 2px 0 #111;
-}
-
-.money.c20 {
-  background: #cbd5e1;
-  box-shadow: inset 0 0 0 6px #d4a72c, 2px 2px 0 #111;
-  width: 64px;
-  height: 64px;
-}
-
-.money.c025 {
-  background: #e8b478;
-  width: 50px;
-  height: 50px;
-  font-size: 15px;
-}
-
-.money:active:not(:disabled) {
-  transform: translate(2px, 2px);
-}
-
-.money:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ---- Feedback Toast (Correct / Wrong Change) ---- */
-#feedback {
-  position: absolute;
-  top: 230px;
-  left: 420px;
-  width: 440px;
-  padding: 16px 20px;
-  border: 3px solid #111;
-  box-shadow: 6px 6px 0 #111;
-  z-index: 30;
+#day-banner {
   text-align: center;
-  font-weight: bold;
+  padding: 20px 44px;
+  background: #20181a;
+  border: 4px solid #ffd64a;
+  box-shadow: 0 0 0 4px #120c0e, 8px 8px 0 rgba(0, 0, 0, 0.7);
 }
 
-#feedback.good {
-  background: #d9f99d;
+#day-banner[hidden] {
+  display: none !important;
 }
 
-#feedback.bad {
-  background: #fecdd3;
+#day-banner-title {
+  font-size: 42px;
+  color: #ffd64a;
+  text-shadow: 4px 4px 0 #000;
+  letter-spacing: 3px;
 }
 
-#feedback-text {
-  white-space: pre-line;
-  font-size: 18px;
-  margin-bottom: 10px;
-}
-
-#feedback-btn {
-  font-family: inherit;
+#day-banner-sub {
+  margin-top: 8px;
   font-size: 16px;
-  font-weight: bold;
-  padding: 7px 18px;
-  background: #fff;
-  border: 3px solid #111;
-  cursor: pointer;
+  color: #f5eee0;
+  letter-spacing: 1.5px;
 }
 
-/* ---- Guided Tutorial Bar & Element Highlight ---- */
+/* ---- Guided Tutorial Step Card ---- */
 .tut-highlight {
-  outline: 5px solid #ff9f1c !important;
-  box-shadow: 0 0 0 8px rgba(255, 159, 28, 0.35) !important;
+  outline: 4px solid #ffd166 !important;
+  box-shadow: 0 0 0 7px rgba(255, 209, 102, 0.45) !important;
+  border-radius: 4px;
+}
+
+#hud-lives.tut-highlight,
+#status-above-tray.tut-highlight {
+  padding: 4px 10px;
+  background: rgba(20, 14, 16, 0.55);
+}
+
+#bottom-route-bar.tut-highlight {
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 6px #ffd166, 0 -6px 18px rgba(255, 209, 102, 0.75) !important;
+  border-radius: 0;
 }
 
 #tutorial-bar {
   position: absolute;
-  left: 72px;
-  bottom: 22px;
-  width: 560px;
-  background: #fffbe6;
-  border: 3px solid #111;
-  box-shadow: 5px 5px 0 #111;
+  left: 84px;
+  top: 146px;
+  width: 460px;
+  background: #fdf6e3;
+  border: 4px solid #140e10;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
   padding: 12px 16px;
-  z-index: 28;
+  z-index: 25;
 }
 
-.tut-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+#tutorial-bar[hidden] {
+  display: none !important;
 }
 
 #tut-title {
-  font-weight: bold;
-  font-size: 16px;
+  display: block;
+  font-size: 15px;
   color: #9a3412;
+  margin-bottom: 6px;
 }
 
 #tut-text {
-  font-size: 15px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
   margin: 0 0 10px 0;
 }
 
@@ -749,30 +1118,60 @@ body {
 
 .tut-actions button {
   font-family: inherit;
-  font-weight: bold;
-  font-size: 14px;
+  font-size: 13px;
   padding: 6px 12px;
-  border: 2px solid #111;
+  border: 3px solid #111;
   cursor: pointer;
 }
 
-#tut-next {
-  background: #ffd166;
+#tut-next { background: #ffd166; }
+#tut-skip { background: #e5e7eb; }
+
+/* ---- Wrong / Retry Feedback Toast ---- */
+#feedback {
+  position: absolute;
+  top: 230px;
+  left: 380px;
+  width: 440px;
+  padding: 16px 20px;
+  border: 4px solid #111;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
+  z-index: 32;
+  text-align: center;
 }
 
-#tut-skip {
-  background: #eee;
+#feedback[hidden] {
+  display: none !important;
+}
+
+#feedback.good { background: #d9f99d; }
+#feedback.bad { background: #fecdd3; }
+
+#feedback-text {
+  white-space: pre-line;
+  font-size: 16px;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+#feedback-btn {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 7px 16px;
+  background: #fff;
+  border: 3px solid #111;
+  cursor: pointer;
 }
 
 /* ---- Modals (Menu / Settings & Post-Game Screen) ---- */
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 40;
+  z-index: 45;
 }
 
 .modal-backdrop[hidden] {
@@ -780,17 +1179,18 @@ body {
 }
 
 .modal-card {
-  width: 460px;
-  background: #fff;
-  border: 4px solid #111;
-  box-shadow: 8px 8px 0 #111;
+  width: 480px;
+  background: #ffd3ae;
+  border: 4px solid #000;
+  box-shadow: inset 0 0 0 4px #e8ba93, 8px 8px 0 rgba(0, 0, 0, 0.5);
   padding: 20px 24px;
 }
 
 .modal-card h2 {
   margin-top: 0;
-  border-bottom: 3px solid #111;
+  border-bottom: 3px solid #000;
   padding-bottom: 8px;
+  text-align: center;
 }
 
 .setting-row {
@@ -798,7 +1198,7 @@ body {
   align-items: center;
   justify-content: space-between;
   margin: 12px 0;
-  font-weight: bold;
+  font-size: 15px;
 }
 
 .modal-btns {
@@ -810,12 +1210,11 @@ body {
 
 .modal-btns button {
   font-family: inherit;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 15px;
   padding: 10px;
-  border: 3px solid #111;
-  background: #ffd166;
-  box-shadow: 3px 3px 0 #111;
+  border: 3px solid #000;
+  background: #fff1d0;
+  box-shadow: 3px 3px 0 #000;
   cursor: pointer;
 }
 
@@ -826,7 +1225,7 @@ body {
 .meta-footer {
   margin-top: 14px;
   font-size: 12px;
-  color: #555;
+  color: #3b2a1e;
   display: flex;
   justify-content: space-between;
 }

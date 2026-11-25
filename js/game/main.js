@@ -1,9 +1,9 @@
 // Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
-import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js';
-import { fitStage } from './layout.js';
-import { Emitter } from './emitter.js';
-import { Play } from './play.js';
-import { TutorialGuide } from './tutorial.js';
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=19';
+import { fitStage } from './layout.js?v=8';
+import { Emitter } from './emitter.js?v=8';
+import { Play } from './play.js?v=20';
+import { TutorialGuide } from './tutorial.js?v=17';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { init as initProgress, save as saveProgress, getProfile, getState } from './progress.js';
@@ -71,8 +71,8 @@ async function handleStageEnd(summary) {
   if (summary.stageId === 'tutorial') {
     const updated = applyTutorialDone(getProfile());
     await saveProgress(updated);
-    title.textContent = 'Handa ka na!';
-    body.textContent = 'Tapos na ang Tutorial (Level 0)! Alam mo na kung paano tumingin sa taripa, umintindi ng salita ng tsuper, at magbigay ng tamang sukli.';
+    title.textContent = "You're Ready!";
+    body.textContent = 'Tutorial (Level 0) complete! You now know how to read the Taripa, give exact change, protect your hearts, and follow the route progress bar.';
     stats.hidden = true;
     primary.textContent = 'Start Level 1';
     primary.onclick = () => startStage('level1');
@@ -81,7 +81,8 @@ async function handleStageEnd(summary) {
     const res = applyEndlessResult(getProfile(), diff, summary.score);
     await saveProgress(res.profile);
     title.textContent = 'Game Over (Endless Mode)';
-    body.textContent = `Stars Earned: ★ ${res.starsAfter} / 3${res.newBest ? ' (New High Score!)' : ''}`;
+    const dayText = `Reached Day ${summary.day || 1}`;
+    body.textContent = `${dayText} • Stars Earned: ★ ${res.starsAfter} / 3${res.newBest ? ' (New High Score!)' : ''}`;
     stats.hidden = false;
     $('pg-score').textContent = summary.score;
     $('pg-streak').textContent = summary.bestStreak;
@@ -98,18 +99,18 @@ async function handleStageEnd(summary) {
 
     if (nextStageId) {
       title.textContent = `${STAGES[summary.stageId].name} Complete!`;
-      body.textContent = 'Naabot mo ang huling hintuan nang hindi nauubos ang buhay!';
+      body.textContent = 'You reached the final stop with hearts remaining!';
       primary.textContent = 'Move to Next Level';
       primary.onclick = () => startStage(nextStageId);
     } else {
       title.textContent = 'Level 3 Complete!';
-      body.textContent = 'Binabati kita! Na-unlock mo na ang Endless Mode!';
+      body.textContent = 'Congratulations! You unlocked Endless Mode!';
       primary.textContent = 'Play Endless Mode';
       primary.onclick = () => { location.href = './login.html?section=gamemode'; };
     }
   } else {
-    title.textContent = 'Naubos ang Buhay!';
-    body.textContent = 'Subukan ulit mula sa unang hintuan.';
+    title.textContent = 'Out of Hearts!';
+    body.textContent = 'You ran out of lives before reaching the final stop. Try again from the first stop!';
     stats.hidden = false;
     $('pg-score').textContent = summary.score;
     $('pg-streak').textContent = summary.bestStreak;

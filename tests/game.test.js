@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, ROUTES, DENOMS, MAX_PAYMENT, LEVEL_ORDER, getStage } from '../js/game/data.js';
-import { mulberry32, validateRoute, fareOf, makePassenger, fixedPassenger } from '../js/game/logic.js';
+import { STAGES, ROUTES, ENDLESS_STOPS, DENOMS, MAX_PAYMENT, LEVEL_ORDER, getStage } from '../js/game/data.js';
+import { mulberry32, validateRoute, fareOf, makePassenger, fixedPassenger, jumbleRoute } from '../js/game/logic.js';
 import { createRun } from '../js/game/session.js';
 import { breakdown } from '../js/game/money.js';
 import { pesoWord, amountWord } from '../js/game/numbers.js';
@@ -13,18 +13,25 @@ test('every route has a valid fare matrix', () => {
   for (const [name, r] of Object.entries(ROUTES)) assert.ok(validateRoute(r), name);
 });
 
-test('sample round from the document: Palengke -> Plaza, 2 pax, pays 50', () => {
-  // Level 1 uses the document's stop names; Palengke(0) -> Plaza(3)
-  const fare = fareOf(ROUTES.level1, 0, 3);
-  assert.equal(fare, 1500);
-  assert.equal(5000 - 2 * fare, 2000);
+test('Level 1..3 have 3, 4, and 5 destination stops after Terminal', () => {
+  assert.deepEqual(ROUTES.tutorial.stops, ['Terminal', 'Jollibee', 'Palengke']);
+  assert.equal(ROUTES.level1.stops.length - 1, 3);
+  assert.equal(ROUTES.level2.stops.length - 1, 4);
+  assert.equal(ROUTES.level3.stops.length - 1, 5);
 });
 
-test('tutorial passenger: Terminal -> Palengke, ₱10 fare, pays ₱20', () => {
-  const p = fixedPassenger(STAGES.tutorial);
-  assert.equal(p.fare, 1000);
-  assert.equal(p.payment, 2000);
-  assert.equal(p.change, 1000);
+test('tutorial passengers: guided question + ₱20->₱10 change, then exact ₱10 SAKTO NA', () => {
+  const p0 = fixedPassenger(STAGES.tutorial, 0);
+  assert.equal(p0.fare, 1000);
+  assert.equal(p0.payment, 2000);
+  assert.equal(p0.change, 1000);
+  assert.deepEqual(p0.question, { answer: 10, options: [20, 10] });
+
+  const p1 = fixedPassenger(STAGES.tutorial, 1);
+  assert.equal(p1.fare, 1000);
+  assert.equal(p1.payment, 1000);
+  assert.equal(p1.change, 0);
+  assert.equal(p1.question, null);
 });
 
 test('random passengers always make sense (thousands per stage)', () => {
@@ -55,7 +62,7 @@ test('random passengers always make sense (thousands per stage)', () => {
       }
       if (p.question) {
         const q = p.question;
-        assert.equal(q.answer * 100, p.fare, `question answer ${where}`);
+        assert.equal(q.answer * 100, p.total, `question answer equals total (fare * count) ${where}`);
         assert.equal(q.options.length, 2);
         assert.ok(q.options.includes(q.answer));
         assert.notEqual(q.options[0], q.options[1]);
@@ -69,49 +76,54 @@ test('random passengers always make sense (thousands per stage)', () => {
   }
 });
 
-// Bot that plays perfectly
-function playRun(stage, seed, { wrong = false, maxServed = 300 } = {}) {
+// Simulates continuous progress bar: serves `paxPerLeg` passengers per stop leg, then arrives at the next stop!
+function playRun(stage, seed, { wrong = false, paxPerLeg = 2, maxDays = 3 } = {}) {
   const run = createRun(stage, { rng: mulberry32(seed) });
   const denoms = denomsFor(stage);
   run.start();
+  let legServed = 0;
+
   for (let guard = 0; guard < 20000; guard++) {
-    switch (run.phase) {
-      case 'question': {
-        const q = run.current.question;
-        const choice = wrong ? q.options.find((o) => o !== q.answer) : q.answer;
-        run.answer(choice);
-        break;
-      }
-      case 'paying': {
-        const target = run.current.change + (wrong ? 100 : 0);
+    if (run.phase === 'complete' || run.phase === 'failed' || run.phase === 'gameover') return run;
+    if (run.endless && run.day > maxDays) return run;
+
+    if (run.phase === 'question') {
+      const q = run.current.question;
+      const choice = wrong ? q.options.find((o) => o !== q.answer) : q.answer;
+      run.answer(choice);
+    } else if (run.phase === 'paying') {
+      const target = run.current.change + (wrong ? 100 : 0);
+      if (target === 0 && !wrong) {
+        run.submit(true);
+      } else {
         for (const d of breakdown(target, denoms)) assert.notEqual(run.addMoney(d), null);
         assert.equal(run.givenTotal, target);
         run.submit(false);
-        break;
       }
-      case 'result':
-        if (run.served >= maxServed) return run;
-        run.next();
-        break;
-      case 'driving': run.arrive(); break;
-      default: return run; // complete | failed | gameover
+    } else if (run.phase === 'result') {
+      legServed++;
+      const nextPhase = run.next();
+      if (nextPhase === 'failed' || nextPhase === 'gameover') return run;
+      if (legServed >= paxPerLeg) {
+        legServed = 0;
+        run.arrive();
+      }
     }
   }
   throw new Error('run never ended');
 }
 
-test('perfect play completes every Normal stage with full lives', () => {
+test('perfect play completes every Normal stage with full lives and continuous passengers', () => {
   for (const id of ['tutorial', ...LEVEL_ORDER]) {
     const stage = getStage(id);
-    for (let seed = 1; seed <= 30; seed++) {
-      const run = playRun(stage, seed);
+    const legs = stage.route.stops.length - 1;
+    for (let seed = 1; seed <= 25; seed++) {
+      const run = playRun(stage, seed, { paxPerLeg: 3 });
       assert.equal(run.phase, 'complete', `${id} seed ${seed}`);
       assert.equal(run.lives, stage.lives);
-      if (!stage.practice) {
-        assert.equal(run.served, stage.passengers);
-        assert.equal(run.correct, stage.passengers);
-        assert.ok(run.score > 0);
-      }
+      assert.equal(run.served, legs * 3);
+      assert.equal(run.correct, legs * 3);
+      if (!stage.practice) assert.ok(run.score > 0);
     }
   }
 });
@@ -120,8 +132,8 @@ test('always-wrong play loses exactly one life per passenger', () => {
   for (const id of [...LEVEL_ORDER, 'endless-easy', 'endless-medium', 'endless-hard']) {
     const stage = getStage(id);
     for (let seed = 1; seed <= 20; seed++) {
-      const run = playRun(stage, seed, { wrong: true });
-      assert.equal(run.phase, stage.lives && id.startsWith('endless') ? 'gameover' : 'failed', `${id} ${seed}`);
+      const run = playRun(stage, seed, { wrong: true, paxPerLeg: 10 });
+      assert.equal(run.phase, id.startsWith('endless') ? 'gameover' : 'failed', `${id} ${seed}`);
       assert.equal(run.lives, 0);
       assert.equal(run.served, stage.lives);
       assert.equal(run.score, 0);
@@ -129,33 +141,105 @@ test('always-wrong play loses exactly one life per passenger', () => {
   }
 });
 
-test('Endless keeps going (loops the route) while the player is correct', () => {
+test('patience timeout removes 1 heart and ends run when hearts hit 0', () => {
+  const run = createRun(STAGES.level3, { rng: mulberry32(42) }); // 3 lives
+  run.start();
+  for (let i = 0; i < 3; i++) {
+    const res = run.timeout();
+    assert.equal(res.timeout, true);
+    assert.equal(res.livesLeft, 2 - i);
+    run.next();
+  }
+  assert.equal(run.phase, 'failed');
+  assert.equal(run.lives, 0);
+});
+
+test('Endless jumbles the 5 stops and switches to Day 2, Day 3, ... when reaching final stop with lives', () => {
   for (const id of ['endless-easy', 'endless-medium', 'endless-hard']) {
-    const run = playRun(getStage(id), 7, { maxServed: 250 });
-    assert.equal(run.served, 250);
+    const run = createRun(getStage(id), { rng: mulberry32(99) });
+    run.start();
+    assert.equal(run.day, 1);
+    assert.equal(run.route.stops[0], 'Terminal');
+    assert.deepEqual(run.route.stops.slice(1).slice().sort(), ENDLESS_STOPS.slice().sort());
+
+    const dayOrders = new Set([run.route.stops.slice(1).join(',')]);
+    // Arrive through 5 stops -> switches to Day 2, then 5 more -> Day 3, then Day 4
+    for (let step = 0; step < 15; step++) {
+      run.arrive();
+      assert.equal(run.route.stops[0], 'Terminal');
+      assert.deepEqual(run.route.stops.slice(1).slice().sort(), ENDLESS_STOPS.slice().sort());
+      dayOrders.add(run.route.stops.slice(1).join(','));
+    }
+    assert.equal(run.day, 4);
     assert.equal(run.lives, 5);
-    assert.ok(run.lap > 0, 'route looped');
+    assert.ok(dayOrders.size > 1, 'Endless stops should be jumbled across days');
   }
 });
 
-test('tutorial never removes lives and lets the player retry', () => {
-  const run = createRun(STAGES.tutorial);
+test('jumbleRoute preserves Terminal at index 0 and all 5 stops', () => {
+  const r = jumbleRoute(mulberry32(7), ROUTES.endlessEasy);
+  assert.equal(r.stops[0], 'Terminal');
+  assert.deepEqual(r.stops.slice(1).sort(), ENDLESS_STOPS.slice().sort());
+  assert.ok(validateRoute(r));
+});
+
+test('fare questions never appear twice in a row and multiply fare by group size', () => {
+  const run = createRun(STAGES.level1, { rng: mulberry32(123) });
   run.start();
+  let prevAsked = false;
+  let askedCount = 0;
+  let multiAsked = 0;
+  for (let i = 0; i < 60; i++) {
+    const asked = run.phase === 'question';
+    if (asked) {
+      assert.equal(prevAsked, false, 'should never ask fare question twice in a row');
+      askedCount++;
+      assert.equal(run.current.question.answer * 100, run.current.fare * run.current.count);
+      if (run.current.count > 1) multiAsked++;
+      run.answer(run.current.question.answer);
+    }
+    prevAsked = asked;
+    run.submit(run.current.change === 0);
+    run.next();
+  }
+  assert.ok(askedCount > 0 && askedCount < 35, `occasional questions (${askedCount}/60)`);
+  assert.ok(multiAsked > 0, 'multi-passenger questions should occur with multiplied answer');
+});
+
+test('tutorial never removes lives, retries wrong change, and supports question + hints + SAKTO NA', () => {
+  const run = createRun(STAGES.tutorial, { rng: mulberry32(5) });
+  run.start();
+  // Passenger 1 starts with "Magkano po?" question + 3 hints available
+  assert.equal(run.phase, 'question');
+  assert.equal(run.hintsLeft, 3);
+  assert.equal(run.useHint(), true);
+  assert.equal(run.hintsLeft, 2);
+  assert.equal(run.answer(10).correct, true);
   assert.equal(run.phase, 'paying');
+  // Wrong change retries without losing lives
   run.addMoney(500);
   const r = run.submit();
   assert.equal(r.retry, true);
   assert.equal(run.phase, 'paying');
   assert.equal(run.givenTotal, 0);
+  // Correct ₱10 change on Passenger 1
   run.addMoney(1000);
   assert.equal(run.submit().correct, true);
-  assert.equal(run.next(), 'driving');
+  // Next passenger keeps coming before Jollibee: Passenger 2 is exact ₱10 fare!
+  assert.equal(run.next(), 'paying');
+  assert.equal(run.current.change, 0);
+  assert.equal(run.submit(true).correct, true);
+  // Progress bar reaches Jollibee -> arrive() -> Palengke leg
+  run.arrive();
+  assert.equal(run.stopIdx, 1);
+  // Progress bar reaches Palengke -> Tutorial complete!
   assert.equal(run.arrive(), 'complete');
 });
 
 test('actions in the wrong phase are ignored (no double submits)', () => {
   const run = createRun(STAGES.level1, { rng: mulberry32(3) });
   assert.equal(run.submit(), null); // before start
+  assert.equal(run.arrive(), null); // before start
   run.start();
   if (run.phase === 'question') {
     assert.equal(run.addMoney(1000), null); // can't pay before answering
@@ -164,7 +248,6 @@ test('actions in the wrong phase are ignored (no double submits)', () => {
   run.submit(true);
   assert.equal(run.submit(true), null); // second submit ignored
   assert.equal(run.addMoney(1000), null);
-  assert.equal(run.arrive(), null);
   assert.equal(run.served, 1);
 });
 
@@ -183,16 +266,13 @@ test('hints: limited per level, none in Level 3', () => {
   const run = createRun(STAGES.level1, { rng: mulberry32(11) });
   run.start();
   let used = 0;
-  for (let i = 0; i < 10 && !['complete', 'failed'].includes(run.phase); i++) {
-    while (!['question', 'complete', 'failed'].includes(run.phase)) {
-      if (run.phase === 'paying') { run.submit(run.current.change === 0); }
-      if (run.phase === 'result') run.next();
-      if (run.phase === 'driving') run.arrive();
-    }
+  for (let i = 0; i < 12 && !['complete', 'failed'].includes(run.phase); i++) {
     if (run.phase === 'question') {
       while (run.useHint()) used++;
       run.answer(run.current.question.answer);
     }
+    if (run.phase === 'paying') run.submit(run.current.change === 0);
+    if (run.phase === 'result') run.next();
   }
   assert.ok(used <= 3);
   const l3 = createRun(STAGES.level3);
