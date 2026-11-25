@@ -1,6 +1,6 @@
 // Pure game rules: fares, passengers, payments, fare questions, scoring, route jumbling.
 // No DOM here, so it can be tested with Node (see tests/).
-import { MAX_PAYMENT, SCORING } from './data.js';
+import { MAX_PAYMENT, SCORING } from './data.js?v=22';
 import { toCentavos } from './money.js';
 
 /** Small seedable random generator, so tests are repeatable. */
@@ -129,8 +129,28 @@ function buildPassenger(board, dest, count, fare, payment, question) {
   return { board, dest, count, fare, total, payment, change: payment - total, question };
 }
 
+/**
+ * Returns stop indices strictly ahead of `originIdx` on the route.
+ * The current origin stop and any already-passed stops are never eligible destinations.
+ */
+export function upcomingStops(route, originIdx) {
+  if (!Number.isInteger(originIdx) || originIdx < 0 || originIdx >= route.stops.length - 1) {
+    return [];
+  }
+  const originName = route.stops[originIdx];
+  const out = [];
+  for (let i = originIdx + 1; i < route.stops.length; i++) {
+    if (route.stops[i] !== originName) out.push(i);
+  }
+  return out;
+}
+
 export function makePassenger(rng, stage, board, route = stage.route, { allowQuestion = true } = {}) {
-  const dest = randInt(rng, board + 1, route.stops.length - 1);
+  const upcoming = upcomingStops(route, board);
+  if (!upcoming.length) {
+    throw new Error(`No upcoming destination stops ahead of origin index ${board}`);
+  }
+  const dest = pick(rng, upcoming);
   const count = groupSize(rng, stage.maxGroup);
   const fare = fareOf(route, board, dest);
   const total = fare * count;
@@ -141,6 +161,9 @@ export function makePassenger(rng, stage, board, route = stage.route, { allowQue
 
 export function fixedPassenger(stage, idx = 0) {
   const f = (stage.fixedQueue && stage.fixedQueue[idx]) || stage.fixed;
+  if (!(f.dest > f.board) || f.board < 0 || f.dest >= stage.route.stops.length) {
+    throw new Error(`Invalid fixed passenger trip ${f.board}->${f.dest}`);
+  }
   const fare = fareOf(stage.route, f.board, f.dest);
   if (f.payment < fare * f.count) throw new Error('Fixed passenger pays too little');
   const q = f.question ? { answer: f.question.answer, options: f.question.options.slice() } : null;

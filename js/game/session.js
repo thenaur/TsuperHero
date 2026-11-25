@@ -9,8 +9,8 @@
 //   - Endless Mode: the 5 stops are jumbled each Day. Reaching the final stop
 //     with lives > 0 advances to Day 2, Day 3, ... with freshly jumbled stops!
 //   - Running out of lives -> 'failed' (Normal) or 'gameover' (Endless).
-import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=21';
-import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=17';
+import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=22';
+import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=22';
 import { sum } from './money.js?v=17';
 
 export class Run {
@@ -35,15 +35,19 @@ export class Run {
     this.streak = 0;
     this.bestStreak = 0;
     this.served = 0;
+    this.servedOnLeg = 0;
     this.correct = 0;
     this.given = [];
     this.lastAnswer = null;
     this.lastResult = null;
+    this.lastMissedOnArrival = false;
     this._tutorialSpawned = 0;
     this._lastAskedQuestion = false;
   }
 
   get lastStop() { return this.route.stops.length - 1; }
+  get originIdx() { return this.stopIdx; }
+  get currentStop() { return this.route.stops[this.stopIdx]; }
   get givenTotal() { return sum(this.given); }
 
   start() {
@@ -57,18 +61,29 @@ export class Run {
     this.lastAnswer = null;
     this.lastResult = null;
 
-    if (this.practice && this.stage.fixedQueue && this._tutorialSpawned < this.stage.fixedQueue.length) {
-      const f = this.stage.fixedQueue[this._tutorialSpawned];
-      if (f.board === this.stopIdx) {
-        this.current = fixedPassenger(this.stage, this._tutorialSpawned);
+    if (this.practice && this.stage.fixedQueue) {
+      // Skip any fixed tutorial entries belonging to already-passed origin stops
+      while (
+        this._tutorialSpawned < this.stage.fixedQueue.length &&
+        (this.stage.fixedQueue[this._tutorialSpawned].board < this.stopIdx ||
+          this.stage.fixedQueue[this._tutorialSpawned].dest <= this.stopIdx)
+      ) {
         this._tutorialSpawned++;
-        this._lastAskedQuestion = !!this.current.question;
-        this.phase = this.current.question ? 'question' : 'paying';
-        return;
+      }
+      if (this._tutorialSpawned < this.stage.fixedQueue.length) {
+        const f = this.stage.fixedQueue[this._tutorialSpawned];
+        if (f.board === this.stopIdx && f.dest > this.stopIdx) {
+          this.current = fixedPassenger(this.stage, this._tutorialSpawned);
+          this._tutorialSpawned++;
+          this._lastAskedQuestion = !!this.current.question;
+          this.phase = this.current.question ? 'question' : 'paying';
+          return;
+        }
       }
     }
 
-    // Never ask a "Magkano po?" question twice in a row so it stays kid-friendly
+    // Never ask a "Magkano po?" question twice in a row so it stays kid-friendly.
+    // Passengers strictly board at `this.stopIdx` (current origin) and travel to a stop ahead (`dest > this.stopIdx`).
     this.current = makePassenger(this.rng, this.stage, this.stopIdx, this.route, {
       allowQuestion: !this._lastAskedQuestion,
     });
@@ -122,12 +137,14 @@ export class Run {
     if (this.practice) {
       if (!correct) { this.given = []; res.retry = true; return res; }
       this.served++;
+      this.servedOnLeg++;
       this.correct++;
       this.phase = 'result';
       return (this.lastResult = res);
     }
 
     this.served++;
+    this.servedOnLeg++;
     if (correct) {
       this.correct++;
       this.streak++;
@@ -147,6 +164,7 @@ export class Run {
   timeout() {
     if (this.practice || (this.phase !== 'question' && this.phase !== 'paying')) return null;
     this.served++;
+    this.servedOnLeg++;
     this.streak = 0;
     this.lives = Math.max(0, this.lives - 1);
     const res = {
@@ -168,15 +186,43 @@ export class Run {
     return this.phase;
   }
 
-  /** Called when the bottom progress bar reaches the next stop. */
-  arrive() {
+  /**
+   * Called when the bottom progress bar reaches the next stop.
+   * Anti-stall safeguard: if the player reaches a stop in Normal/Endless mode with an
+   * unanswered ('question') or unpaid ('paying') passenger and either hasn't served anyone
+   * on this leg (`servedOnLeg === 0`) or `stalled` is flagged, automatically triggers a
+   * missed-passenger penalty (-1 life, reset streak) before advancing.
+   */
+  arrive({ stalled = false } = {}) {
     if (this.phase === 'idle' || this.phase === 'complete' || this.phase === 'failed' || this.phase === 'gameover') {
       return null;
     }
+
+    this.lastMissedOnArrival = false;
+    const pendingPassenger = this.phase === 'question' || this.phase === 'paying';
+    if (!this.practice && pendingPassenger && (this.servedOnLeg === 0 || stalled)) {
+      this.served++;
+      this.streak = 0;
+      this.lives = Math.max(0, this.lives - 1);
+      this.lastMissedOnArrival = true;
+      this.lastResult = {
+        correct: false,
+        given: this.givenTotal,
+        expected: this.current ? this.current.change : 0,
+        exact: false,
+        points: 0,
+        retry: false,
+        timeout: true,
+        missedOnArrival: true,
+        livesLeft: this.lives,
+      };
+    }
+
     if (!this.practice && this.lives <= 0) {
       this.phase = this.endless ? 'gameover' : 'failed';
       return this.phase;
     }
+    this.servedOnLeg = 0;
     this.stopIdx++;
     if (this.stopIdx >= this.lastStop) {
       if (!this.endless) {
