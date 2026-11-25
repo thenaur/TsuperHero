@@ -1,8 +1,8 @@
 // Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
-import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=22';
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=23';
 import { fitStage } from './layout.js?v=8';
 import { Emitter } from './emitter.js?v=8';
-import { Play, setAnimationsFrozen } from './play.js?v=26';
+import { Play, setAnimationsFrozen } from './play.js?v=27';
 import { TutorialGuide } from './tutorial.js?v=21';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
@@ -165,11 +165,6 @@ $('set-sfx').onchange = (e) => {
 // Boot: load profile (or guest mode) and launch requested stage
 (async function boot() {
   const urlStage = new URLSearchParams(location.search).get('stage');
-  if (urlStage && urlStage.startsWith('endless-')) {
-    // Go directly to black screen with zero delay before async profile init completes
-    const curtain = $('fade-curtain');
-    if (curtain) curtain.classList.add('instant', 'dark');
-  }
   await initProgress();
   const st = getState();
   $('account-badge').textContent = st.uid
