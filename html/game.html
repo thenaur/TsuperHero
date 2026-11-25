@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TsuperHero – Gameplay</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../css/game.css?v=21">
+  <link rel="stylesheet" href="../css/game.css?v=24">
 </head>
 <body>
   <div id="stage">
     <!-- Layer 1: Scrolling Road / Destination Landmark Still Frame -->
     <div id="windshield">
       <img id="road-img" src="../assets/RoadLoop.gif" alt="Philippine Road">
+      <canvas id="road-freeze" hidden aria-hidden="true"></canvas>
     </div>
 
     <!-- Layer 2: Jeepney Interior & Steering Wheel -->
@@ -19,6 +20,7 @@
 
     <!-- Layer 3: Animated Driver Left Hand -->
     <img id="driver-hand" src="../assets/DriverHand.gif" alt="Driver Hand">
+    <canvas id="hand-freeze" hidden aria-hidden="true"></canvas>
 
     <!-- Top Gray Header Bar (SCORE, STREAK, Hints, MENU) -->
     <div id="top-bar">
@@ -121,7 +123,6 @@
         <img id="mini-jeepney" src="../assets/MiniJeepney.png" alt="Jeepney">
         <div id="progress-stops"></div>
       </div>
-      <div id="bottom-score-badge" class="bottom-badge">SCORE: <span id="bottom-score">0</span></div>
     </div>
 
     <!-- Guided Tutorial Step Card -->
@@ -143,10 +144,15 @@
     <!-- Fade-to-Black Stop Transition Curtain & Endless Day Banner -->
     <div id="fade-curtain">
       <div id="day-banner" hidden>
-        <div id="day-banner-title">DAY 2</div>
-        <div id="day-banner-sub">NEW JUMBLED ROUTE!</div>
+        <div id="day-banner-title">DAY 1</div>
+        <div id="day-banner-sub" hidden></div>
+        <div id="day-banner-lives-wrap">
+          <div id="day-banner-hearts" aria-label="Lives Remaining"></div>
+          <div id="day-banner-lives-text">LIVES LEFT: 5 / 5</div>
+        </div>
       </div>
     </div>
+    <script>if (new URLSearchParams(location.search).get('stage')?.startsWith('endless-')) document.getElementById('fade-curtain').classList.add('instant', 'dark');</script>
 
     <!-- MENU & Settings Modal -->
     <div id="modal-menu" class="modal-backdrop" hidden>
@@ -191,6 +197,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/game/main.js?v=21"></script>
+  <script type="module" src="../js/game/main.js?v=24"></script>
 </body>
 </html>

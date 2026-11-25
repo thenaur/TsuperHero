@@ -47,7 +47,8 @@ html, body {
   z-index: 1;
 }
 
-#road-img {
+#road-img,
+#road-freeze {
   position: absolute;
   top: 30px;
   left: 58px;
@@ -55,6 +56,11 @@ html, body {
   height: 468px;
   object-fit: cover;
   image-rendering: pixelated;
+}
+
+#road-freeze {
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ---- Layer 2: Jeepney Interior & Steering Wheel Overlay ---- */
@@ -71,7 +77,8 @@ html, body {
 }
 
 /* ---- Layer 3: Animated Driver Left Hand on Steering Wheel ---- */
-#driver-hand {
+#driver-hand,
+#hand-freeze {
   position: absolute;
   left: 0;
   top: 340px;
@@ -82,8 +89,22 @@ html, body {
   z-index: 6;
 }
 
-#driver-hand.stopped {
+#hand-freeze {
+  z-index: 7;
+}
+
+#driver-hand.stopped,
+#hand-freeze.stopped {
   transform: translateY(2px);
+}
+
+#road-freeze[hidden],
+#hand-freeze[hidden] {
+  display: none !important;
+}
+
+.gif-frozen {
+  visibility: hidden !important;
 }
 
 /* ---- Top Gray Header Bar (SCORE, STREAK, ?x3, MENU) ---- */
@@ -260,16 +281,17 @@ html, body {
 /* ---- Slide-out Drawer for Taripa / Salita ng Tsuper (Dynamic content-fitting container, no scrollbars) ---- */
 #drawer {
   position: absolute;
-  top: 138px;
+  top: 134px;
   left: 84px;
   width: fit-content;
   height: fit-content;
-  min-width: 280px;
-  max-width: 680px;
+  min-width: 260px;
+  max-width: 712px;
+  max-height: 512px;
   background: #fdf6e3;
   border: 4px solid #111;
   box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
-  padding: 12px 16px 14px 16px;
+  padding: 10px 12px 12px 12px;
   z-index: 26;
   overflow: hidden;
   transform-origin: top left;
@@ -326,8 +348,9 @@ html, body {
 }
 
 #fare-table {
-  --cell-py: 6px;
-  --cell-px: 10px;
+  --cell-py: 5px;
+  --cell-px: 8px;
+  --cell-ls: 0px;
   width: auto;
   border-collapse: collapse;
   font-size: 14px;
@@ -336,8 +359,10 @@ html, body {
 #fare-table th, #fare-table td {
   border: 2px solid #111;
   padding: var(--cell-py) var(--cell-px);
+  letter-spacing: var(--cell-ls);
   text-align: center;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 #fare-table thead th {
@@ -878,6 +903,33 @@ html, body {
   cursor: not-allowed;
 }
 
+/* Instant pixel-art denomination hover tooltip on bills & coins */
+.money::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  display: none;
+  pointer-events: none;
+  background: rgba(18, 12, 16, 0.84);
+  border: 2px solid #ffd64a;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.3px;
+  padding: 3px 6px;
+  white-space: nowrap;
+  image-rendering: pixelated;
+  z-index: 30;
+}
+
+.money:hover:not(:disabled)::after {
+  display: block;
+}
+
 /* UNDO and CLEAR aligned cleanly in the lower-right of MoneyContainer.png using graybutton.png */
 .tray-tools {
   position: absolute;
@@ -967,16 +1019,11 @@ html, body {
   white-space: nowrap;
 }
 
-#bottom-score-badge {
-  min-width: 204px;
-  color: #f5eee0;
-}
-
 #route-track-wrap {
   position: relative;
   flex: 1;
   height: 50px;
-  margin: 0 44px;
+  margin: 0 58px 0 46px;
 }
 
 .track-line {
@@ -1068,20 +1115,37 @@ html, body {
   pointer-events: auto;
 }
 
+#fade-curtain.instant {
+  transition: none;
+}
+
 #day-banner {
   text-align: center;
-  padding: 20px 44px;
+  padding: 24px 52px;
   background: #20181a;
   border: 4px solid #ffd64a;
   box-shadow: 0 0 0 4px #120c0e, 8px 8px 0 rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 420ms ease-in-out, transform 420ms ease-in-out;
 }
 
-#day-banner[hidden] {
+#day-banner.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#day-banner.instant {
+  transition: none;
+}
+
+#day-banner[hidden],
+#day-banner-sub[hidden] {
   display: none !important;
 }
 
 #day-banner-title {
-  font-size: 42px;
+  font-size: 46px;
   color: #ffd64a;
   text-shadow: 4px 4px 0 #000;
   letter-spacing: 3px;
@@ -1092,6 +1156,35 @@ html, body {
   font-size: 16px;
   color: #f5eee0;
   letter-spacing: 1.5px;
+}
+
+#day-banner-lives-wrap {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 3px solid #40302c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#day-banner-hearts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#day-banner-hearts .heart-icon {
+  width: 34px;
+  height: 29px;
+}
+
+#day-banner-lives-text {
+  font-size: 14px;
+  color: #ffd64a;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 1px;
 }
 
 /* ---- Guided Tutorial Step Card ---- */

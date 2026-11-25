@@ -6,9 +6,9 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=21';
-import { createRun } from './session.js?v=21';
-import { fareOf } from './logic.js?v=17';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=22';
+import { createRun } from './session.js?v=22';
+import { fareOf } from './logic.js?v=22';
 import { formatAmount, formatPeso } from './money.js?v=17';
 import { pesoWord, amountWord, capitalize } from './numbers.js';
 import { sfx } from './audio.js';
@@ -17,9 +17,42 @@ const $ = (id) => document.getElementById(id);
 const ROAD_LOOP_SRC = '../assets/RoadLoop.gif';
 const FADE_MS = 500;
 const THANK_YOU_MS = 3400;
-const DAY_BANNER_MS = 1800;
+const DAY_BANNER_MS = 2000;
 const ROUTE_PIXEL_STEP = 4; // snap jeepney & yellow progress bar in 4px art-pixel steps
 const TIMER_PIXEL_STEP = 6; // snap passenger timer bar in 6px art-pixel steps
+
+function freezeGifToCanvas(imgEl, canvasEl) {
+  if (!imgEl || !canvasEl || !imgEl.complete || !imgEl.naturalWidth || !imgEl.naturalHeight) return false;
+  canvasEl.width = imgEl.naturalWidth;
+  canvasEl.height = imgEl.naturalHeight;
+  const ctx = canvasEl.getContext('2d');
+  if (!ctx) return false;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  ctx.drawImage(imgEl, 0, 0, canvasEl.width, canvasEl.height);
+  return true;
+}
+
+/** Freeze or unfreeze RoadLoop.gif and DriverHand.gif onto static canvas overlays (used while MENU is open). */
+export function setAnimationsFrozen(frozen) {
+  const pairs = [
+    [$('road-img'), $('road-freeze')],
+    [$('driver-hand'), $('hand-freeze')],
+  ];
+  for (const [img, canvas] of pairs) {
+    if (!img || !canvas) continue;
+    if (frozen) {
+      if (freezeGifToCanvas(img, canvas)) {
+        canvas.classList.toggle('stopped', img.classList.contains('stopped'));
+        canvas.hidden = false;
+        img.classList.add('gif-frozen');
+      }
+    } else {
+      canvas.hidden = true;
+      img.classList.remove('gif-frozen');
+    }
+  }
+}
 
 function el(tag, props = {}, children = []) {
   const e = document.createElement(tag);
@@ -85,6 +118,45 @@ export class Play {
     this.resetPatience();
     this.setRoadMoving(true);
     this.updateRouteBarVisual(0);
+    setAnimationsFrozen(false);
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (!this.ended && this.panel) this.fitDrawerContent();
+      });
+    }
+
+    if (this.run.endless) {
+      // Go directly to black Day 1 transition screen with no fade-in and no delay, hold, then fade out
+      const curtain = $('fade-curtain');
+      this.render(false);
+      this.showBubbleText('');
+      this.isAtStopScene = true;
+      this.progressPaused = true;
+      if (curtain) {
+        curtain.classList.add('instant', 'dark');
+        void curtain.offsetWidth;
+        curtain.classList.remove('instant');
+      }
+      this.showDayBanner(this.run.day, '', true);
+      this.startLoop();
+      this.later(DAY_BANNER_MS, () => {
+        this.hideDayBanner();
+        this.isAtStopScene = false;
+        this.progressPaused = false;
+        this.resetPatience();
+        this.render(false);
+        this.showBubbleText('');
+        if (curtain) curtain.classList.remove('dark');
+        this.later(FADE_MS, () => {
+          const banner = $('day-banner');
+          if (banner && !banner.classList.contains('visible')) banner.hidden = true;
+        });
+        this.later(260, () => this.render(true));
+      });
+      return;
+    }
+
     this.render(true);
     this.startLoop();
   }
@@ -97,10 +169,54 @@ export class Play {
     this.ac.abort();
     this.hideFeedback();
     this.setDrawer(null, false);
+    setAnimationsFrozen(false);
     const curtain = $('fade-curtain');
-    if (curtain) curtain.classList.remove('dark');
+    if (curtain) curtain.classList.remove('dark', 'instant');
     const banner = $('day-banner');
-    if (banner) banner.hidden = true;
+    if (banner) {
+      banner.classList.remove('visible', 'instant');
+      banner.hidden = true;
+    }
+  }
+
+  showDayBanner(day, subtitle = '', immediate = false) {
+    const banner = $('day-banner');
+    if (!banner) return;
+    $('day-banner-title').textContent = `DAY ${day}`;
+    const subEl = $('day-banner-sub');
+    if (subEl) {
+      subEl.textContent = subtitle;
+      subEl.hidden = !subtitle;
+    }
+    const heartsWrap = $('day-banner-hearts');
+    if (heartsWrap) {
+      heartsWrap.replaceChildren();
+      const total = Math.max(1, this.run.maxLives || 5);
+      for (let i = 0; i < total; i++) {
+        const cls = i >= this.run.lives ? 'heart-icon lost' : 'heart-icon';
+        heartsWrap.append(el('img', { class: cls, src: '../assets/hearts.png?v=10', alt: 'Life' }));
+      }
+    }
+    const livesTxt = $('day-banner-lives-text');
+    if (livesTxt) {
+      livesTxt.textContent = `LIVES LEFT: ${this.run.lives} / ${Math.max(1, this.run.maxLives || 5)}`;
+    }
+    banner.hidden = false;
+    if (immediate) {
+      banner.classList.add('instant', 'visible');
+      void banner.offsetWidth;
+      banner.classList.remove('instant');
+    } else {
+      banner.classList.remove('instant', 'visible');
+      void banner.offsetWidth;
+      banner.classList.add('visible');
+    }
+  }
+
+  hideDayBanner() {
+    const banner = $('day-banner');
+    if (!banner) return;
+    banner.classList.remove('visible');
   }
 
   later(ms, fn) {
@@ -133,7 +249,8 @@ export class Play {
   // ---------- stepped pixel-art progress bar + patience timer loop ----------
   currentLegSeconds() {
     const base = this.stage.legSeconds || 38;
-    if (this.run.endless) return Math.max(24, base - (this.run.day - 1) * 2);
+    const minLeg = this.stage.patienceSec > 0 ? this.stage.patienceSec + 10 : 24;
+    if (this.run.endless) return Math.max(minLeg, base - (this.run.day - 1) * 2);
     return base;
   }
 
@@ -172,7 +289,8 @@ export class Play {
       const dt = Math.min(0.1, (now - this.lastFrameTs) / 1000);
       this.lastFrameTs = now;
 
-      const paused = this.progressPaused || this.isAtStopScene || this.isMenuPaused();
+      const feedbackBlocking = !($('feedback')?.hidden) && !($('feedback-btn')?.hidden);
+      const paused = this.progressPaused || this.isAtStopScene || this.isMenuPaused() || feedbackBlocking;
 
       if (!paused) {
         // 1. Drain passenger patience timer in Normal & Endless while waiting for player input
@@ -265,6 +383,10 @@ export class Play {
     const banner = $('day-banner');
     if (banner) banner.hidden = true;
 
+    const stalled = this.patienceMax > 0 &&
+      (run.phase === 'question' || run.phase === 'paying') &&
+      this.patienceLeft <= this.patienceMax * 0.25;
+
     this.showBubbleText('');
     curtain.classList.add('dark');
     sfx('stop');
@@ -285,7 +407,7 @@ export class Play {
 
         this.later(FADE_MS, () => {
           this.showBubbleText('');
-          const phase = run.arrive();
+          const phase = run.arrive({ stalled });
 
           if (phase === 'complete' || phase === 'failed' || phase === 'gameover') {
             this.isAtStopScene = false;
@@ -294,7 +416,7 @@ export class Play {
           }
 
           const finishResume = () => {
-            if (banner) banner.hidden = true;
+            this.hideDayBanner();
             const segs = Math.max(1, run.route.stops.length - 1);
             this.routePct = run.stopIdx / segs;
             this.updateRouteBarVisual(this.routePct);
@@ -308,7 +430,10 @@ export class Play {
             this.showBubbleText('');
 
             curtain.classList.remove('dark');
-            this.later(220, () => this.render(true));
+            this.later(FADE_MS, () => {
+              if (banner && !banner.classList.contains('visible')) banner.hidden = true;
+            });
+            this.later(260, () => this.render(true));
           };
 
           if (isEndlessNewDay) {
@@ -317,12 +442,7 @@ export class Play {
             this.buildFareTable();
             this.routePct = 0;
             this.updateRouteBarVisual(0);
-
-            if (banner) {
-              $('day-banner-title').textContent = `DAY ${run.day}`;
-              $('day-banner-sub').textContent = 'NEW JUMBLED ROUTE!';
-              banner.hidden = false;
-            }
+            this.showDayBanner(run.day, 'NEW JUMBLED ROUTE!');
             this.later(DAY_BANNER_MS, finishResume);
           } else {
             finishResume();
@@ -367,7 +487,7 @@ export class Play {
     const route = this.run.route;
     const destCount = route.stops.length - 1;
     const head = el('tr', {}, [
-      el('th', { class: 'corner', text: 'From \\ To' }),
+      el('th', { class: 'corner', text: 'From/To' }),
       ...route.stops.slice(1).map((s) => el('th', { text: s })),
     ]);
     const rows = route.stops.slice(0, -1).map((from, i) =>
@@ -390,29 +510,51 @@ export class Play {
     const wordList = $('word-list');
     if (!drawer || drawer.hidden) return;
 
+    // Max content width fits cleanly between left=84px and right HUD (tray at 808px),
+    // and height stays well above the bottom progress bar (top=134px..646px).
+    const MAX_DRAWER_W = 712;
+    const MAX_DRAWER_H = 500;
+    const MAX_CONTENT_W = MAX_DRAWER_W - 32; // accounts for drawer borders + horizontal padding
+
     if (this.panel === 'taripa' && table) {
       let fontSize = 14;
       let padY = 6;
-      let padX = 10;
-      table.style.fontSize = `${fontSize}px`;
-      table.style.setProperty('--cell-py', `${padY}px`);
-      table.style.setProperty('--cell-px', `${padX}px`);
+      let padX = 9;
+      let letterSpacing = 0;
 
-      while ((drawer.offsetWidth > 680 || drawer.offsetHeight > 470) && fontSize > 10) {
-        fontSize -= 1;
-        padY = Math.max(3, padY - 1);
-        padX = Math.max(5, padX - 1);
+      const applyTableMetrics = () => {
         table.style.fontSize = `${fontSize}px`;
         table.style.setProperty('--cell-py', `${padY}px`);
         table.style.setProperty('--cell-px', `${padX}px`);
+        table.style.setProperty('--cell-ls', `${letterSpacing}px`);
+      };
+
+      applyTableMetrics();
+
+      while (
+        (table.scrollWidth > MAX_CONTENT_W ||
+          drawer.scrollWidth > drawer.clientWidth + 1 ||
+          drawer.scrollHeight > MAX_DRAWER_H) &&
+        fontSize > 7.5
+      ) {
+        fontSize = Math.round((fontSize - 0.5) * 10) / 10;
+        if (padX > 3) padX = Math.max(3, padX - 1);
+        if (padY > 3) padY = Math.max(3, padY - 0.5);
+        if (fontSize <= 11) letterSpacing = -0.5;
+        applyTableMetrics();
       }
     } else if (this.panel === 'salita' && wordList) {
       const count = wordList.children.length;
       wordList.dataset.cols = count > 14 ? '3' : '2';
       let fontSize = count > 14 ? 13 : 14;
       wordList.style.fontSize = `${fontSize}px`;
-      while ((drawer.offsetWidth > 680 || drawer.offsetHeight > 470) && fontSize > 10) {
-        fontSize -= 1;
+      while (
+        (wordList.scrollWidth > MAX_CONTENT_W ||
+          drawer.scrollWidth > drawer.clientWidth + 1 ||
+          drawer.scrollHeight > MAX_DRAWER_H) &&
+        fontSize > 9
+      ) {
+        fontSize -= 0.5;
         wordList.style.fontSize = `${fontSize}px`;
       }
     }
@@ -428,7 +570,6 @@ export class Play {
     $('hud-streak-wrap').hidden = run.practice;
     $('hud-hint-top').hidden = !(stage.hints > 0);
     $('btn-hint').hidden = !(stage.hints > 0);
-    $('bottom-score-badge').hidden = run.practice;
 
     // Build pixel heart icons using custom assets/hearts.png
     const heartTotal = run.practice ? 5 : Math.max(1, run.maxLives);
@@ -438,7 +579,7 @@ export class Play {
       livesEl.append(el('img', { class: 'heart-icon', src: '../assets/hearts.png?v=10', alt: 'Life' }));
     }
 
-    // Money container (bills in top recessed slot, coins in lower row — pure pixel art)
+    // Money container (bills in top recessed slot, coins in lower row — pure pixel art + instant hover tooltip)
     const billsWrap = $('tray-bills');
     const coinsWrap = $('tray-coins');
     billsWrap.replaceChildren();
@@ -446,12 +587,12 @@ export class Play {
     for (const d of DENOMS) {
       if (d.centavo && !stage.centavos) continue;
       const children = d.centavo ? [el('span', { class: 'money-tag', text: d.label })] : [];
+      const pesoTip = formatPeso(d.value);
       const b = el('button', {
         class: `money ${d.kind} ${d.id}`,
         type: 'button',
-        'aria-label': d.label,
-        title: d.label,
-        dataset: { value: d.value },
+        'aria-label': pesoTip,
+        dataset: { value: d.value, tooltip: pesoTip },
       }, children);
       (d.kind === 'bill' ? billsWrap : coinsWrap).append(b);
     }
@@ -508,8 +649,11 @@ export class Play {
     const a = this.run.answer(value);
     if (!a) return;
     this.setHint(false);
-    // Give elementary players a fresh full timer bar to calculate and count change after answering
-    this.resetPatience();
+    // Give a capped top-up after answering "Magkano po?" so kids have time to count change without stalling past a leg
+    if (this.patienceMax > 0) {
+      this.patienceLeft = Math.min(this.patienceMax, Math.max(this.patienceLeft + 5, this.patienceMax * 0.65));
+      this.updateTimerBarVisual();
+    }
     sfx(a.correct ? 'correct' : 'wrong');
     this.render(true);
     if (!a.correct) {
@@ -674,7 +818,6 @@ export class Play {
     });
     $('hud-stage').textContent = shortStageBadge(this.stage, run.day);
     $('hud-score').textContent = run.score;
-    $('bottom-score').textContent = run.score;
     $('hud-streak').textContent = run.streak;
     $('hint-count').textContent = run.hintsLeft;
 
