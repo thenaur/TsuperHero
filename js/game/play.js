@@ -6,9 +6,9 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=22';
-import { createRun } from './session.js?v=22';
-import { fareOf } from './logic.js?v=22';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=23';
+import { createRun } from './session.js?v=23';
+import { fareOf } from './logic.js?v=23';
 import { formatAmount, formatPeso } from './money.js?v=17';
 import { pesoWord, amountWord, capitalize } from './numbers.js';
 import { sfx } from './audio.js';
@@ -130,20 +130,20 @@ export class Play {
     }
 
     if (this.run.endless) {
-      // Go directly to black Day 1 transition screen with no fade-in and no delay, hold, then fade out
+      // Fade smoothly into the Day 1 transition screen, hold, then fade out to the road
       const curtain = $('fade-curtain');
       this.render(false);
       this.showBubbleText('');
       this.isAtStopScene = true;
       this.progressPaused = true;
       if (curtain) {
-        curtain.classList.add('instant', 'dark');
+        curtain.classList.remove('instant', 'dark');
         void curtain.offsetWidth;
-        curtain.classList.remove('instant');
+        curtain.classList.add('dark');
       }
-      this.showDayBanner(this.run.day, '', true);
+      this.showDayBanner(this.run.day, '', false);
       this.startLoop();
-      this.later(DAY_BANNER_MS, () => {
+      this.later(FADE_MS + DAY_BANNER_MS, () => {
         this.hideDayBanner();
         this.isAtStopScene = false;
         this.progressPaused = false;
@@ -395,13 +395,19 @@ export class Play {
     const banner = $('day-banner');
     if (banner) banner.hidden = true;
 
-    const stalled = this.patienceMax > 0 &&
-      (run.phase === 'question' || run.phase === 'paying') &&
-      this.patienceLeft <= this.patienceMax * 0.25;
+    const missedOnArrival = !run.practice && (run.phase === 'question' || run.phase === 'paying');
 
     this.showBubbleText('');
+    if (missedOnArrival) {
+      sfx('wrong');
+      const icons = document.querySelectorAll('#hud-lives .heart-icon');
+      const nextLives = Math.max(0, run.lives - 1);
+      icons.forEach((img, i) => img.classList.toggle('lost', i >= nextLives));
+      this.triggerHeartLoss($('timer-bar-wrap'), nextLives);
+    } else {
+      sfx('stop');
+    }
     curtain.classList.add('dark');
-    sfx('stop');
 
     this.later(FADE_MS, () => {
       this.setRoadMoving(false, arrivedStopName);
@@ -419,7 +425,7 @@ export class Play {
 
         this.later(FADE_MS, () => {
           this.showBubbleText('');
-          const phase = run.arrive({ stalled });
+          const phase = run.arrive();
 
           if (phase === 'complete' || phase === 'failed' || phase === 'gameover') {
             this.isAtStopScene = false;
@@ -454,7 +460,7 @@ export class Play {
             this.buildFareTable();
             this.routePct = 0;
             this.updateRouteBarVisual(0);
-            this.showDayBanner(run.day, 'NEW JUMBLED ROUTE!');
+            this.showDayBanner(run.day, '');
             this.later(DAY_BANNER_MS, finishResume);
           } else {
             finishResume();
@@ -661,12 +667,33 @@ export class Play {
     const a = this.run.answer(value);
     if (!a) return;
     this.setHint(false);
+    sfx(a.correct ? 'correct' : 'wrong');
+
+    if (!a.correct && !this.run.practice) {
+      if (a.livesLeft <= 0) this.progressPaused = true;
+      this.render(false);
+      this.triggerHeartLoss($('choices'));
+      this.showFeedback(`Correct fare: ₱${a.answer}`, 'bad');
+      this.emit('answer', a);
+      if (a.livesLeft <= 0) {
+        this.cancel(this.advanceTimer);
+        this.advanceTimer = this.later(1100, () => this.end());
+        return;
+      }
+      this.feedbackTimer = this.later(1500, () => this.hideFeedback());
+      if (this.patienceMax > 0) {
+        this.patienceLeft = Math.min(this.patienceMax, Math.max(this.patienceLeft + 5, this.patienceMax * 0.65));
+        this.updateTimerBarVisual();
+      }
+      this.render(true);
+      return;
+    }
+
     // Give a capped top-up after answering "Magkano po?" so kids have time to count change without stalling past a leg
     if (this.patienceMax > 0) {
       this.patienceLeft = Math.min(this.patienceMax, Math.max(this.patienceLeft + 5, this.patienceMax * 0.65));
       this.updateTimerBarVisual();
     }
-    sfx(a.correct ? 'correct' : 'wrong');
     this.render(true);
     if (!a.correct) {
       this.showFeedback(`Correct fare: ₱${a.answer}`, 'bad');
@@ -689,7 +716,7 @@ export class Play {
     if (!this.isAtStopScene) this.render();
   }
 
-  triggerHeartLoss(targetEl = null) {
+  triggerHeartLoss(targetEl = null, lostHeartIdx = this.run.lives) {
     const livesEl = $('hud-lives');
     if (livesEl) {
       livesEl.classList.remove('hurt');
@@ -698,7 +725,7 @@ export class Play {
       this.later(400, () => livesEl.classList.remove('hurt'));
 
       const icons = livesEl.querySelectorAll('.heart-icon');
-      const lostIdx = Math.max(0, Math.min(icons.length - 1, this.run.lives));
+      const lostIdx = Math.max(0, Math.min(icons.length - 1, lostHeartIdx));
       const lostIcon = icons[lostIdx];
       let popLeft = livesEl.clientWidth - 24;
       if (lostIcon) {
