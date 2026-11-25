@@ -56,7 +56,7 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
   - Triggers occasionally (`22%–30%` probability) and **NEVER twice in a row** (`_lastAskedQuestion` guard in `session.js`).
   - Always asks for the **total fare (`fare × count`)** — e.g., 2 people going to a ₱10 stop asks `"MAGKANO PO PARA SA DALAWA PAPUNTANG JOLLIBEE?"` with **`BENTE` (₱20)** as the correct answer.
   - Clicking the `?` hint button (`assets/hint_question.png`) reveals peso numbers (`₱20` / `₱10`) for `HINT_MS` (`5s`) and decrements `HINTS: x3`.
-  - Wrong fare-question answer costs **no life** (shows a brief feedback toast, NOT inside `speech.png`).
+  - Wrong fare-question answer costs **1 heart** and resets streak in Normal & Endless (costs no life in Tutorial; shows a brief feedback toast, NOT inside `speech.png`).
 - **Exact Payment:** Players can click **`SAKTO NA`** (or `SUKLIAN` with `0` sukli) when payment equals the exact fare.
 
 ---
