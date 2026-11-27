@@ -1,0 +1,453 @@
+/* =====================================================================
+   TsuperHero – Customization Screen (1280x720 scaled virtual stage)
+   Left side: BACK button, brown preview frame (NormalPreview / item preview),
+   and left-aligned "IN-GAME SCREEN" label container.
+   Right side: Gas.png cabinet with "CUSTOMIZATION", Endless HIGHEST SCORE LCD,
+   DECOR / INTERIOR / SCENERY tab buttons, and 2-top + 1-bottom-center item grid.
+   ===================================================================== */
+
+body.bg-customize {
+  background-color: #36363a;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(rgba(0, 0, 0, 0.14) 1px, transparent 1px);
+  background-size: 6px 6px, 4px 4px;
+  background-position: 0 0, 2px 2px;
+}
+
+#sec-customize {
+  position: absolute;
+  inset: 0;
+  width: 1280px;
+  height: 720px;
+  image-rendering: pixelated;
+}
+
+/* ---- Left Side: Back Button ---- */
+#btn-back-customize {
+  left: 24px;
+  top: 32px;
+  width: 214px;
+  height: 52px;
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+
+/* ---- Left Side: Main Brown Preview Container ---- */
+#custom-preview-frame {
+  position: absolute;
+  left: 34px;
+  top: 124px;
+  width: 772px;
+  height: 424px;
+  background: #a6633b;
+  border: 4px solid #000;
+  box-shadow: inset 0 4px 0 #c07b50, inset 0 -4px 0 #824927, 4px 4px 0 rgba(0, 0, 0, 0.4);
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#custom-preview-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #141016;
+  border: 3px solid #000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#custom-preview-img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  image-rendering: pixelated;
+  z-index: 1;
+}
+
+.preview-layer {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.preview-layer[hidden] {
+  display: none !important;
+}
+
+#custom-preview-decor {
+  left: 50.469%;
+  top: 7.951%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+#custom-preview-decor.decor-dice {
+  width: 11.25%;
+  height: 37.92%;
+  clip-path: polygon(
+    evenodd,
+    0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+    0 8.871%, 100% 8.871%, 100% 48.387%, 0 48.387%, 0 8.871%
+  );
+}
+
+#custom-preview-decor.decor-freshener {
+  width: 8.75%;
+  height: 41.59%;
+  clip-path: polygon(
+    evenodd,
+    0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+    0 8.088%, 100% 8.088%, 100% 44.118%, 0 44.118%, 0 8.088%
+  );
+}
+
+#custom-preview-decor.decor-lily {
+  width: 10%;
+  height: 41.59%;
+  clip-path: polygon(
+    evenodd,
+    0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+    0 8.088%, 100% 8.088%, 100% 44.118%, 0 44.118%, 0 8.088%
+  );
+}
+
+#custom-preview-interior {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 101.53%;
+  object-fit: fill;
+  z-index: 3;
+}
+
+#custom-preview-hud {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 4;
+}
+
+/* ---- Left Side: "IN-GAME SCREEN" Label Container (left-aligned directly under preview) ---- */
+#custom-preview-label {
+  position: absolute;
+  left: 34px;
+  top: 558px;
+  padding: 10px 22px;
+  background: #a6633b;
+  border: 4px solid #000;
+  box-shadow: inset 0 3px 0 #c07b50, inset 0 -3px 0 #824927, 4px 4px 0 rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 22px;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+}
+
+/* ---- Admin-Only Testing Bar (hidden for regular players) ---- */
+#custom-admin-bar {
+  position: absolute;
+  left: 34px;
+  top: 632px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: rgba(20, 16, 22, 0.9);
+  border: 3px solid #ffd23f;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  z-index: 6;
+}
+
+#custom-admin-bar[hidden] {
+  display: none !important;
+}
+
+.admin-bar-tag {
+  color: #ffd23f;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-right: 4px;
+}
+
+.admin-chip {
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  font-size: 12px;
+  padding: 5px 10px;
+  background: #3f424a;
+  color: #fff;
+  border: 2px solid #000;
+  cursor: pointer;
+}
+
+.admin-chip:hover {
+  background: #585d68;
+}
+
+.admin-chip:active {
+  transform: translateY(1px);
+  background: #2c2f36;
+}
+
+.admin-chip-all {
+  background: #2f7d32;
+  color: #fff;
+}
+
+.admin-chip-all:hover {
+  background: #3a973e;
+}
+
+/* ---- Right Side: Gas.png Container (648x1037 scaled cleanly to 450x720) ---- */
+#custom-gas-panel {
+  position: absolute;
+  left: 826px;
+  top: 0;
+  width: 450px;
+  height: 720px;
+  background: url("../assets/customization/Gas.png") no-repeat center center / 100% 100%;
+  image-rendering: pixelated;
+}
+
+/* Top Beige Plate: "CUSTOMIZATION" */
+#custom-gas-title {
+  position: absolute;
+  top: 28px;
+  left: 20px;
+  width: 410px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #141010;
+  font-size: 27px;
+  letter-spacing: 3px;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+/* Upper Dark Grey LCD Screen: Highest Endless Score */
+#custom-highscore-box {
+  position: absolute;
+  top: 118px;
+  left: 84px;
+  width: 282px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+#custom-highscore-lbl {
+  color: #ffffff;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-shadow: 2px 2px 0 #000;
+  line-height: 1.1;
+}
+
+#custom-highscore-val {
+  color: #ffd23f;
+  font-size: 26px;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 #000;
+  line-height: 1.1;
+}
+
+/* Three Horizontal Category Tab Buttons (GasButton1 180x60, GasButton2 190x60, GasButton3 180x60)
+   Exact pixel-aligned to Gas.png (648x1037): x=49..598 (550px), y=269..328 (60px), zero gaps */
+#custom-tab-bar {
+  position: absolute;
+  top: 25.9402%;
+  left: 7.5617%;
+  width: 84.8765%;
+  height: 5.7859%;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  z-index: 4;
+}
+
+.gas-tab-btn {
+  border: none;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.6px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 80ms steps(2), transform 80ms steps(2);
+}
+
+#tab-custom-decor {
+  flex: 0 0 32.7273%;
+  background-image: url("../assets/customization/GasButton1.png");
+}
+
+#tab-custom-interior {
+  flex: 0 0 34.5454%;
+  background-image: url("../assets/customization/GasButton2.png");
+}
+
+#tab-custom-scenery {
+  flex: 0 0 32.7273%;
+  background-image: url("../assets/customization/GasButton3.png");
+}
+
+.gas-tab-btn:hover {
+  filter: brightness(0.76);
+}
+
+.gas-tab-btn:active {
+  filter: brightness(0.6);
+  transform: translateY(1px);
+}
+
+.gas-tab-btn.is-active {
+  filter: brightness(0.7);
+  color: #ffd23f;
+}
+
+/* Brown Interior Container inside Gas.png: 2 top + 1 bottom-center cards */
+#custom-items-grid {
+  position: absolute;
+  top: 244px;
+  left: 54px;
+  width: 342px;
+  height: 372px;
+  padding: 18px 14px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, 146px);
+  justify-content: space-between;
+  align-content: space-between;
+  row-gap: 16px;
+}
+
+.custom-card {
+  width: 146px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  cursor: pointer;
+}
+
+/* 3rd item centered cleanly on the bottom row */
+.custom-card:nth-child(3) {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.custom-item-box {
+  position: relative;
+  width: 146px;
+  height: 114px;
+  background: #ffead6;
+  border: 4px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  transition: filter 80ms steps(2), transform 80ms steps(2);
+}
+
+.custom-card.is-locked .custom-item-box {
+  background: #d9dde2;
+}
+
+.custom-card.is-equipped .custom-item-box {
+  box-shadow: inset 0 0 0 3px #ffd23f;
+}
+
+.custom-card:not(.is-locked):hover .custom-item-box {
+  filter: brightness(1.06);
+}
+
+.custom-item-icon {
+  max-width: 96px;
+  max-height: 92px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+  pointer-events: none;
+}
+
+.custom-card.is-locked .custom-item-icon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Bottom Action Bar: Equipped.png (green) / Unequipped.png (red) / Locked gray bar */
+.custom-equip-btn {
+  width: 146px;
+  height: 38px;
+  border: none;
+  margin-top: -2px;
+  padding: 0 6px;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  font-family: 'Silkscreen', 'Press Start 2P', 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 80ms steps(2), transform 80ms steps(2);
+}
+
+.custom-equip-btn.state-equip {
+  background-image: url("../assets/customization/Equipped.png");
+}
+
+.custom-equip-btn.state-unequip {
+  background-image: url("../assets/customization/Unequipped.png");
+}
+
+.custom-equip-btn.state-locked {
+  background: linear-gradient(to bottom, #7a808a 0%, #5e636c 60%, #484c54 100%);
+  border: 4px solid #000;
+  border-top-width: 3px;
+  color: #e5e7eb;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: not-allowed;
+}
+
+.custom-equip-btn:not(.state-locked):hover {
+  filter: brightness(0.86);
+}
+
+.custom-equip-btn:not(.state-locked):active {
+  filter: brightness(0.68);
+  transform: translateY(2px);
+}

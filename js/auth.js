@@ -6,10 +6,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth } from "./firebase-config.js";
 import { createProfile, loadProfile, saveProfile } from "./storage.js";
+import { CUSTOM } from "./game/data.js?v=25";
 
 const EMAIL_DOMAIN = "tsuperhero.app"; // placeholder; cannot receive mail
 const PIN_PREFIX = "tsuper-"; // Firebase needs 6+ characters; "tsuper-1234" is 11
 const LOCAL_ACCOUNTS_KEY = "tsuperhero.localAccounts";
+export const ADMIN_TEST_CODE = "haljordangreenlantern";
+const ADMIN_UID = "local-admin-haljordangreenlantern";
 
 export const NICKNAME_RULE = /^[A-Za-z0-9_]{3,12}$/;
 export const PIN_RULE = /^\d{4}$/;
@@ -110,6 +113,33 @@ export async function signUp(nick, pin) {
 }
 
 export async function logIn(nick, pin) {
+  // Admin QA test login: username "haljordangreenlantern" with empty PIN unlocks all modes & cosmetics locally
+  if (String(nick || "").trim().toLowerCase() === ADMIN_TEST_CODE && String(pin || "").trim() === "") {
+    try { await signOut(auth); } catch {}
+    const existing = await loadProfile(ADMIN_UID, "Admin");
+    const allItemIds = Object.values(CUSTOM).flat().map((i) => i.id);
+    const hasScore = Math.max(
+      Number(existing?.bestScore?.easy) || 0,
+      Number(existing?.bestScore?.medium) || 0,
+      Number(existing?.bestScore?.hard) || 0
+    );
+    const adminProfile = {
+      ...existing,
+      nickname: "Admin (Test)",
+      isAdmin: true,
+      tutorialDone: true,
+      levelsCompleted: 3,
+      endlessUnlocked: true,
+      stars: 3,
+      bestScore: hasScore > 0 ? existing.bestScore : { easy: 9999, medium: 9999, hard: 9999 },
+      unlocked: hasScore > 0 ? existing.unlocked : allItemIds,
+      equipped: { decor: null, interior: null, scenery: null, ...(existing?.equipped || {}) },
+    };
+    await saveProfile(ADMIN_UID, adminProfile);
+    try { sessionStorage.setItem("tsuperhero.activeLocalUid", ADMIN_UID); } catch {}
+    return { uid: ADMIN_UID, profile: adminProfile, admin: true, offline: true };
+  }
+
   const problem = validate(nick, pin);
   if (problem) throw { code: "app/invalid-input", message: problem };
   try {

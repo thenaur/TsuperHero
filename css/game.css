@@ -63,6 +63,42 @@ html, body {
   z-index: 2;
 }
 
+/* ---- Equipped Mirror Decor (mounted on mirror stem at x ≈ 646px, y = 52px;
+   top collar shows in front of stem y=52..73, cord tucked cleanly behind mirror glass y=74..171) ---- */
+#jeep-decor {
+  position: absolute;
+  left: 646px;
+  top: 52px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 5;
+  clip-path: polygon(
+    evenodd,
+    0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+    0 22px, 100% 22px, 100% 120px, 0 120px, 0 22px
+  );
+}
+
+#jeep-decor[hidden] {
+  display: none !important;
+}
+
+#jeep-decor.decor-dice {
+  width: 144px;
+  height: 248px;
+}
+
+#jeep-decor.decor-freshener {
+  width: 112px;
+  height: 272px;
+}
+
+#jeep-decor.decor-lily {
+  width: 128px;
+  height: 272px;
+}
+
 /* ---- Layer 2: Jeepney Interior & Steering Wheel Overlay ---- */
 #jeep-interior {
   position: absolute;
