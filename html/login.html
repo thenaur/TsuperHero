@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TsuperHero</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../css/menu.css?v=5">
+  <link rel="stylesheet" href="../css/menu.css?v=6">
+  <link rel="stylesheet" href="../css/customize.css?v=5">
 </head>
 <body>
   <div id="stage">
@@ -20,10 +21,10 @@
       <button id="btn-back-login" class="pixel-btn btn-back" type="button"><span>Back</span></button>
       <form id="form-login" autocomplete="off">
         <div id="login-user-wrap" class="pixel-input-wrap">
-          <input id="login-nick" class="pixel-input" type="text" placeholder="Enter Username" maxlength="12" required>
+          <input id="login-nick" class="pixel-input" type="text" placeholder="Enter Username" maxlength="32" required>
         </div>
         <div id="login-pin-wrap" class="pixel-input-wrap">
-          <input id="login-pin" class="pixel-input" type="password" inputmode="numeric" placeholder="4-Digit PIN" maxlength="4" required>
+          <input id="login-pin" class="pixel-input" type="password" inputmode="numeric" placeholder="4-Digit PIN" maxlength="4">
         </div>
         <button id="btn-login-submit" class="pixel-btn" type="submit"><span>LOG-IN</span></button>
       </form>
@@ -68,6 +69,51 @@
       <button id="btn-diff-select" class="pixel-btn" type="button" hidden><span id="lbl-difficulty">Difficulty: Easy</span></button>
     </section>
 
+    <!-- SECTION 6: Customization Screen -->
+    <section id="sec-customize" class="section-view" hidden>
+      <!-- Left side: Back button, brown preview box, and IN-GAME SCREEN label -->
+      <button id="btn-back-customize" class="pixel-btn" type="button"><span>BACK</span></button>
+
+      <div id="custom-preview-frame">
+        <div id="custom-preview-inner">
+          <img id="custom-preview-img" src="../assets/customization/NormalPreview.png" alt="Normal In-Game Preview">
+          <img id="custom-preview-decor" class="preview-layer" hidden alt="Equipped Decor Preview">
+          <img id="custom-preview-interior" class="preview-layer" hidden alt="Equipped Interior Preview">
+          <img id="custom-preview-hud" class="preview-layer" src="../assets/customization/PreviewHudOverlay.png" hidden alt="">
+        </div>
+      </div>
+
+      <div id="custom-preview-label">IN-GAME SCREEN</div>
+
+      <!-- Admin-Only Testing Bar (visible only when logged in as haljordangreenlantern) -->
+      <div id="custom-admin-bar" hidden>
+        <span class="admin-bar-tag">ADMIN TEST:</span>
+        <button type="button" class="admin-chip" data-test-score="0">0</button>
+        <button type="button" class="admin-chip" data-test-score="1000">1000</button>
+        <button type="button" class="admin-chip" data-test-score="2500">2500</button>
+        <button type="button" class="admin-chip" data-test-score="5000">5000</button>
+        <button type="button" class="admin-chip admin-chip-all" data-test-score="9999">ALL</button>
+      </div>
+
+      <!-- Right side: Gas.png container -->
+      <div id="custom-gas-panel">
+        <div id="custom-gas-title">CUSTOMIZATION</div>
+
+        <div id="custom-highscore-box">
+          <div id="custom-highscore-lbl">HIGHEST SCORE:</div>
+          <div id="custom-highscore-val">0</div>
+        </div>
+
+        <div id="custom-tab-bar" role="tablist" aria-label="Customization Categories">
+          <button id="tab-custom-decor" class="gas-tab-btn is-active" type="button" data-cat="decor">DECOR</button>
+          <button id="tab-custom-interior" class="gas-tab-btn" type="button" data-cat="interior">INTERIOR</button>
+          <button id="tab-custom-scenery" class="gas-tab-btn" type="button" data-cat="scenery">SCENERY</button>
+        </div>
+
+        <div id="custom-items-grid"></div>
+      </div>
+    </section>
+
     <!-- Settings Modal (from Main Menu) -->
     <div id="modal-settings" class="menu-modal" hidden>
       <div class="menu-card">
@@ -90,20 +136,6 @@
       </div>
     </div>
 
-    <!-- Customize Placeholder Modal (while customization assets are being made) -->
-    <div id="modal-customize" class="menu-modal" hidden>
-      <div class="menu-card">
-        <h2>Customize</h2>
-        <p style="font-size:15px; line-height:1.5;">
-          Earn Stars in Endless Mode to unlock new Sceneries, Jeepney Interiors, and Decors!
-        </p>
-        <p id="stars-summary" style="font-size:17px; margin:14px 0;">Stars Earned: ★ 0 / 3</p>
-        <div class="modal-close-wrap">
-          <button id="btn-close-customize" class="pixel-btn" type="button"><span>Close</span></button>
-        </div>
-      </div>
-    </div>
-
     <!-- Status / Error Message Banner -->
     <div id="status-toast" hidden></div>
   </div>
@@ -111,15 +143,16 @@
   <script type="module">
     import { isConfigured, auth } from "../js/firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { signUp, logIn, logOut, friendlyError } from "../js/auth.js";
-    import { loadProfile } from "../js/storage.js";
+    import { signUp, logIn, logOut, friendlyError } from "../js/auth.js?v=2";
+    import { loadProfile, saveProfile } from "../js/storage.js";
     import { fitStage } from "../js/game/layout.js?v=4";
-    import { VERSION } from "../js/game/data.js";
+    import { VERSION } from "../js/game/data.js?v=27";
     import { loadSettings, saveSettings } from "../js/game/settings.js";
     import { unlock, setSettings, sfx } from "../js/game/audio.js";
+    import { createCustomizeUI } from "../js/game/customize.js?v=4";
 
     const $ = (id) => document.getElementById(id);
-    const SECTIONS = ["sec-startup", "sec-login", "sec-signup", "sec-mainmenu", "sec-gamemode"];
+    const SECTIONS = ["sec-startup", "sec-login", "sec-signup", "sec-mainmenu", "sec-gamemode", "sec-customize"];
     const LEVEL_STAGES = ["tutorial", "level1", "level2", "level3"];
     const DIFF_KEYS = ["easy", "medium", "hard"];
     const DIFF_LABELS = { easy: "Easy", medium: "Medium", hard: "Hard" };
@@ -196,13 +229,33 @@
       for (const id of SECTIONS) {
         $(id).hidden = id !== sectionId;
       }
-      // Switch body background between MainMenuScreen1.gif and ChooseGamemodeScreen1.gif
+      // Switch body background between MainMenuScreen1.gif, ChooseGamemodeScreen1.gif, and Customization dark canvas
       document.body.classList.toggle("bg-gamemode", sectionId === "sec-gamemode");
+      document.body.classList.toggle("bg-customize", sectionId === "sec-customize");
 
       if (sectionId === "sec-mainmenu" && session?.profile) {
         $("player-label").textContent = `Player: ${session.profile.nickname}`;
-        $("stars-summary").textContent = `Stars Earned: ★ ${session.profile.stars || 0} / 3`;
       }
+    }
+
+    const customizeUI = createCustomizeUI({
+      getSession: () => session,
+      onProfileUpdated: async (updatedProfile) => {
+        if (!session) return;
+        session.profile = updatedProfile;
+        try {
+          await saveProfile(session.uid, updatedProfile);
+        } catch (err) {
+          console.warn("Could not save customization online:", err);
+        }
+      },
+      onBack: () => showSection("sec-mainmenu"),
+      showToast,
+    });
+
+    function enterCustomizeSection() {
+      customizeUI.open("decor");
+      showSection("sec-customize");
     }
 
     // Section 1 -> Section 2 or 3
@@ -232,6 +285,9 @@
       try {
         session = await logIn(nick, pin);
         showSection("sec-mainmenu");
+        if (session?.admin) {
+          showToast("Admin Test Mode active — all levels & cosmetics unlocked!", true, 4000);
+        }
       } catch (err) {
         sfx("wrong");
         showToast(err.code === "app/invalid-input" ? err.message : friendlyError(err));
@@ -277,14 +333,7 @@
       $("modal-settings").hidden = true;
     };
 
-    $("btn-menu-customize").onclick = () => {
-      sfx("tap");
-      $("modal-customize").hidden = false;
-    };
-    $("btn-close-customize").onclick = () => {
-      sfx("tap");
-      $("modal-customize").hidden = true;
-    };
+    $("btn-menu-customize").onclick = () => enterCustomizeSection();
 
     $("btn-menu-logout").onclick = async () => {
       sfx("tap");
@@ -354,6 +403,7 @@
           const profile = await loadProfile(user.uid, nick);
           session = { uid: user.uid, profile };
           if (urlSection === "gamemode") enterGamemodeSection();
+          else if (urlSection === "customize") enterCustomizeSection();
           else if (urlSection === "menu") showSection("sec-mainmenu");
         } catch (e) {
           console.warn("Could not restore session:", e);
@@ -366,6 +416,7 @@
             const profile = await loadProfile(localUid, nick);
             session = { uid: localUid, profile, offline: true };
             if (urlSection === "gamemode") enterGamemodeSection();
+            else if (urlSection === "customize") enterCustomizeSection();
             else if (urlSection === "menu") showSection("sec-mainmenu");
           }
         } catch {}

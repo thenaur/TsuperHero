@@ -7,8 +7,8 @@ export function defaultProfile(nickname) {
     endlessUnlocked: false,
     bestScore: { easy: 0, medium: 0, hard: 0 },
     stars: 0,
-    unlocked: ["scenery1"],
-    equipped: { scenery: "scenery1" },
+    unlocked: [],
+    equipped: { decor: null, interior: null, scenery: null },
   };
 }
 

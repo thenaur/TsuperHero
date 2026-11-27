@@ -6,15 +6,17 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=23';
-import { createRun } from './session.js?v=23';
-import { fareOf } from './logic.js?v=23';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=27';
+import { createRun } from './session.js?v=25';
+import { fareOf } from './logic.js?v=25';
 import { formatAmount, formatPeso } from './money.js?v=17';
 import { pesoWord, amountWord, capitalize } from './numbers.js';
+import { findCustomItem, isItemUnlocked } from './progress-rules.js?v=27';
 import { sfx } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
-const ROAD_LOOP_SRC = '../assets/RoadLoop.gif';
+const DEFAULT_ROAD_LOOP_SRC = '../assets/RoadLoop.gif';
+const DEFAULT_INTERIOR_SRC = '../assets/JeepInterior.png';
 const FADE_MS = 500;
 const THANK_YOU_MS = 3400;
 const DAY_BANNER_MS = 2000;
@@ -80,11 +82,14 @@ function shortStageBadge(stage, day = 1) {
 }
 
 export class Play {
-  constructor(stage, { bus, onEnd, rng } = {}) {
+  constructor(stage, { bus, onEnd, rng, profile } = {}) {
     this.stage = stage;
     this.bus = bus;
     this.onEnd = onEnd;
+    this.profile = profile || null;
     this.run = createRun(stage, { rng });
+    this.roadLoopSrc = DEFAULT_ROAD_LOOP_SRC;
+    this.stopBackgrounds = STOP_BACKGROUNDS;
     this.timers = new Set();
     this.ac = new AbortController();
     this.ended = false;
@@ -109,8 +114,54 @@ export class Play {
     this.patienceMax = stage.patienceSec || 0;
     this.patienceLeft = this.patienceMax;
 
+    this.applyCustomization(this.profile);
     this.buildStatic();
     this.bind();
+  }
+
+  applyCustomization(profile) {
+    const eq = profile?.equipped || {};
+
+    // 1. Scenery: sync driving RoadLoop GIF + all 5 destination landmark stills
+    const sceneryItem = findCustomItem('scenery', eq.scenery);
+    if (sceneryItem && isItemUnlocked(profile, sceneryItem)) {
+      this.roadLoopSrc = sceneryItem.roadGif || DEFAULT_ROAD_LOOP_SRC;
+      this.stopBackgrounds = sceneryItem.stopBackgrounds || STOP_BACKGROUNDS;
+    } else {
+      this.roadLoopSrc = DEFAULT_ROAD_LOOP_SRC;
+      this.stopBackgrounds = STOP_BACKGROUNDS;
+    }
+
+    // 2. Decor: mount hanging ornament beneath the rear-view mirror
+    const decorEl = $('jeep-decor');
+    const decorItem = findCustomItem('decor', eq.decor);
+    if (decorEl) {
+      decorEl.classList.remove('decor-dice', 'decor-freshener', 'decor-lily');
+      if (decorItem && isItemUnlocked(profile, decorItem) && decorItem.decorImg) {
+        decorEl.src = decorItem.decorImg;
+        decorEl.alt = decorItem.name;
+        decorEl.classList.add(decorItem.id);
+        decorEl.hidden = false;
+      } else {
+        decorEl.hidden = true;
+      }
+    }
+
+    // 3. Jeep Interior: swap overlay cutout when available & adjust #side-tabs clearance
+    const interiorEl = $('jeep-interior');
+    const sideTabs = $('side-tabs');
+    const interiorItem = findCustomItem('interior', eq.interior);
+    if (interiorEl) {
+      if (interiorItem && isItemUnlocked(profile, interiorItem) && interiorItem.interiorImg) {
+        interiorEl.src = interiorItem.interiorImg;
+        if (sideTabs && interiorItem.sideTabsTop) {
+          sideTabs.style.top = `${interiorItem.sideTabsTop}px`;
+        }
+      } else {
+        interiorEl.src = DEFAULT_INTERIOR_SRC;
+        if (sideTabs) sideTabs.style.top = '';
+      }
+    }
   }
 
   // ---------- lifecycle ----------
@@ -365,10 +416,10 @@ export class Play {
     const hand = $('driver-hand');
     if (!img) return;
     if (moving) {
-      if (!img.src.endsWith('RoadLoop.gif')) img.src = ROAD_LOOP_SRC;
+      if (img.getAttribute('src') !== this.roadLoopSrc) img.src = this.roadLoopSrc;
       hand?.classList.remove('stopped');
     } else {
-      const stillSrc = (stopName && STOP_BACKGROUNDS[stopName]) || STOP_BACKGROUNDS.Jollibee;
+      const stillSrc = (stopName && this.stopBackgrounds[stopName]) || this.stopBackgrounds.Jollibee;
       img.src = stillSrc;
       hand?.classList.add('stopped');
     }

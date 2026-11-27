@@ -1,6 +1,6 @@
 // Pure game rules: fares, passengers, payments, fare questions, scoring, route jumbling.
 // No DOM here, so it can be tested with Node (see tests/).
-import { MAX_PAYMENT, SCORING } from './data.js?v=23';
+import { MAX_PAYMENT, SCORING } from './data.js?v=25';
 import { toCentavos } from './money.js';
 
 /** Small seedable random generator, so tests are repeatable. */

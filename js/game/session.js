@@ -9,8 +9,8 @@
 //   - Endless Mode: the 5 stops are jumbled each Day. Reaching the final stop
 //     with lives > 0 advances to Day 2, Day 3, ... with freshly jumbled stops!
 //   - Running out of lives -> 'failed' (Normal) or 'gameover' (Endless).
-import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=23';
-import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=23';
+import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=25';
+import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=25';
 import { sum } from './money.js?v=17';
 
 export class Run {

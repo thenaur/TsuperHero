@@ -147,20 +147,149 @@ export function getStage(id) {
   };
 }
 
-// ---- Rewards ----
+// ---- Rewards & Customization Catalog ----
 export const STAR_THRESHOLDS = [1000, 2500, 5000];
+export const CUSTOM_PREVIEW_NORMAL = '../assets/customization/NormalPreview.png';
 
+export const CUSTOM_CATEGORY_META = {
+  decor: { label: 'DECOR', unlockScore: 1000, stars: 1 },
+  interior: { label: 'INTERIOR', unlockScore: 2500, stars: 2 },
+  scenery: { label: 'SCENERY', unlockScore: 5000, stars: 3 },
+};
+
+// Item order inside each category matches the Customization UI grid:
+// [0] top-left, [1] top-right, [2] bottom-center
 export const CUSTOM = {
-  scenery: [
-    { id: 'scenery1', name: 'Probinsya', stars: 0 },
-    { id: 'scenery2', name: 'Siyudad', stars: 1 },
+  decor: [
+    {
+      id: 'decor-freshener',
+      name: 'Air Freshener',
+      category: 'decor',
+      tier: 'medium',
+      stars: 1,
+      minScore: 1500,
+      icon: '../assets/customization/decor/DecorAirFreshener.png',
+      preview: '../assets/customization/decor/AirFreshPreview.png',
+      decorImg: '../assets/customization/decor/DecorAirFreshenerActual.png',
+    },
+    {
+      id: 'decor-dice',
+      name: 'Fuzzy Dice',
+      category: 'decor',
+      tier: 'easy',
+      stars: 1,
+      minScore: 1000,
+      icon: '../assets/customization/decor/DecorFuzzyDice.png',
+      preview: '../assets/customization/decor/DicePreview.png',
+      decorImg: '../assets/customization/decor/DecoreFuzzyDiceActual.png',
+    },
+    {
+      id: 'decor-lily',
+      name: 'Lily of the Valley',
+      category: 'decor',
+      tier: 'hard',
+      stars: 1,
+      minScore: 2000,
+      icon: '../assets/customization/decor/DecorLilyValley.png',
+      preview: '../assets/customization/decor/LilyPreview.png',
+      decorImg: '../assets/customization/decor/DecorLilyValleyActual.png',
+    },
   ],
   interior: [
-    { id: 'interior1', name: 'Klasik', stars: 0 },
-    { id: 'interior2', name: 'Pula', stars: 2 },
+    {
+      id: 'interior-christmas',
+      name: 'Christmas',
+      category: 'interior',
+      tier: 'medium',
+      stars: 2,
+      minScore: 3500,
+      icon: '../assets/customization/interior/IconChristmas.png',
+      preview: '../assets/customization/interior/ChristmasPreview.png',
+      interiorImg: '../assets/customization/interior/JeepInteriorChristmas.png',
+      sideTabsTop: 78,
+    },
+    {
+      id: 'interior-fiesta',
+      name: 'Fiesta',
+      category: 'interior',
+      tier: 'easy',
+      stars: 2,
+      minScore: 2500,
+      icon: '../assets/customization/interior/IconFiesta.png',
+      preview: '../assets/customization/interior/FiestaPreview.png',
+      interiorImg: '../assets/customization/interior/JeepInteriorFiesta.png',
+      sideTabsTop: 114,
+    },
+    {
+      id: 'interior-newyear',
+      name: 'New Year',
+      category: 'interior',
+      tier: 'hard',
+      stars: 2,
+      minScore: 4500,
+      icon: '../assets/customization/interior/IconNewYear.png',
+      preview: '../assets/customization/interior/NewYearPreview.png',
+      interiorImg: '../assets/customization/interior/JeepInteriorNewYear.png',
+      sideTabsTop: 78,
+    },
   ],
-  decor: [
-    { id: 'decor1', name: 'Wala', stars: 0 },
-    { id: 'decor2', name: 'Rosaryo', stars: 3 },
+  scenery: [
+    {
+      id: 'scenery-dawn',
+      name: 'Dawn',
+      category: 'scenery',
+      tier: 'hard',
+      stars: 3,
+      minScore: 7500,
+      icon: '../assets/customization/dawn/IconDawn.png',
+      preview: '../assets/customization/dawn/PreviewDawn.png',
+      roadGif: '../assets/customization/dawn/RoadLoopDawn.gif',
+      stopBackgrounds: {
+        Jollibee: '../assets/customization/dawn/RestoDawn.png',
+        Palengke: '../assets/customization/dawn/PalengkeDawn.png',
+        Munisipyo: '../assets/customization/dawn/MunisipyoDawn.png',
+        Hospital: '../assets/customization/dawn/HospitalDawn.png',
+        School: '../assets/customization/dawn/SchoolDawn.png',
+        Terminal: '../assets/customization/dawn/RestoDawn.png',
+      },
+    },
+    {
+      id: 'scenery-night',
+      name: 'Night',
+      category: 'scenery',
+      tier: 'medium',
+      stars: 3,
+      minScore: 6000,
+      icon: '../assets/customization/night/IconNight.png',
+      preview: '../assets/customization/night/PreviewNight.png',
+      roadGif: '../assets/customization/night/RoadloopNight.gif',
+      stopBackgrounds: {
+        Jollibee: '../assets/customization/night/RestoNight.png',
+        Palengke: '../assets/customization/night/PalengkeNight.png',
+        Munisipyo: '../assets/customization/night/MunisipyoNight.png',
+        Hospital: '../assets/customization/night/HospitalNight.png',
+        School: '../assets/customization/night/SchoolNight.png',
+        Terminal: '../assets/customization/night/RestoNight.png',
+      },
+    },
+    {
+      id: 'scenery-morning',
+      name: 'Morning',
+      category: 'scenery',
+      tier: 'easy',
+      stars: 3,
+      minScore: 5000,
+      icon: '../assets/customization/morning/IconMorning.png',
+      preview: '../assets/customization/morning/PreviewMorning.png',
+      roadGif: '../assets/customization/morning/RoadLoopMorning.gif',
+      stopBackgrounds: {
+        Jollibee: '../assets/customization/morning/RestoMorning.png',
+        Palengke: '../assets/customization/morning/PalengkeMorning.png',
+        Munisipyo: '../assets/customization/morning/MunisipyoMorning.png',
+        Hospital: '../assets/customization/morning/HospitalMorning.png',
+        School: '../assets/customization/morning/SchoolMorning.png',
+        Terminal: '../assets/customization/morning/RestoMorning.png',
+      },
+    },
   ],
 };
