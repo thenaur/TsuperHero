@@ -44,7 +44,9 @@ function startStage(stageId) {
   const restartBtn = $('menu-restart-stage');
   if (restartBtn) {
     restartBtn.dataset.startStage = stage.id;
-    restartBtn.textContent = `Restart ${stage.name}`;
+    const label = `Restart ${stage.name}`;
+    restartBtn.title = label;
+    restartBtn.setAttribute('aria-label', label);
   }
 
   currentPlay = new Play(stage, {
