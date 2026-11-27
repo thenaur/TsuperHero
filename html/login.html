@@ -6,7 +6,7 @@
   <title>TsuperHero</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../css/menu.css?v=6">
-  <link rel="stylesheet" href="../css/customize.css?v=5">
+  <link rel="stylesheet" href="../css/customize.css?v=6">
 </head>
 <body>
   <div id="stage">
@@ -143,13 +143,13 @@
   <script type="module">
     import { isConfigured, auth } from "../js/firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { signUp, logIn, logOut, friendlyError } from "../js/auth.js?v=2";
+    import { signUp, logIn, logOut, friendlyError } from "../js/auth.js?v=3";
     import { loadProfile, saveProfile } from "../js/storage.js";
     import { fitStage } from "../js/game/layout.js?v=4";
-    import { VERSION } from "../js/game/data.js?v=27";
+    import { VERSION } from "../js/game/data.js?v=28";
     import { loadSettings, saveSettings } from "../js/game/settings.js";
     import { unlock, setSettings, sfx } from "../js/game/audio.js";
-    import { createCustomizeUI } from "../js/game/customize.js?v=4";
+    import { createCustomizeUI } from "../js/game/customize.js?v=5";
 
     const $ = (id) => document.getElementById(id);
     const SECTIONS = ["sec-startup", "sec-login", "sec-signup", "sec-mainmenu", "sec-gamemode", "sec-customize"];
