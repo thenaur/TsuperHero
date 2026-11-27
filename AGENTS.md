@@ -25,6 +25,7 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
   - `audio-and-settings` — `js/game/audio.js`, `settings.js`, BGM/SFX audio files, Settings screen
   - `customization-rewards` — Customize screen, star-unlocked sceneries/interiors/decors
 - **Merge flow:** Section branch → Pull Request to `staging` (verify & test) → Pull Request to `main` (reviewed by lead).
+- **Commit style:** Use Conventional Commits (e.g., `feat: ...`, `fix: ...`, `docs: ...`, `style: ...`).
 
 ---
 
@@ -61,7 +62,35 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
 
 ---
 
-## 5. Locked-In Visual, UI & Language Standards
+## 5. Locked-In Customization Tab Plan (`customization-rewards`)
+- **Structure:** **3 categories × 3 unlockable items each** (plus each category's default/none state):
+  1. **Decor** *(hung from the **stem** of the rear-view mirror; default = None)*:
+     - **1st (Easy):** Fuzzy Dice *(longer cord wrapped on mirror stem)*
+     - **2nd (Medium):** Air Freshener *(longer cord wrapped on mirror stem)*
+     - **3rd (Hard):** Knitted Lily of the Valley Ornament *(sage-green crochet wrap & leaves + 5 white bell blooms on mirror stem)*
+     - *Placement rule:* Mount on the mirror stem (`x ≈ 646px`, `y ≈ 52px` on the `1280×720` stage) with the middle cord tucked cleanly **behind** the mirror glass (`y = 74..171px`) so the mirror stays unobstructed and the ornament dangles beneath.
+  2. **Jeep Interior** *(holiday themes built on `JeepInterior.png`'s exact `1920×1080` cutout; default = Classic `JeepInterior.png`)*:
+     - **1st (Easy):** Fiesta *(push `#side-tabs` Taripa & Salita icons down to `top: 114px` so they clear the hanging banderitas)*
+     - **2nd (Medium):** Christmas *(push `#side-tabs` down to `top: 78px` to clear the top pine garland)*
+     - **3rd (Hard):** New Year *(push `#side-tabs` down to `top: 78px` to clear the top gold tinsel)*
+     - *Zero re-layouting rule:* Equipping an interior swaps `#jeep-interior`'s `src` directly without moving `SukliContainer`, `MoneyContainer`, `DriverHand`, or the mirror.
+  3. **Sceneries** *(looping road GIF **AND** matching modified stills for all 5 stops; default = Dusk `RoadLoop.gif` + base landmark PNGs)*:
+     - **1st (Easy):** Morning *(bright daytime sky with sun **high in the sky**, not on the horizon; `RoadLoop_Morning.gif` + `*_morning.png`)*
+     - **2nd (Medium):** Night *(indigo sky, crescent moon, stars, lit windows, and **clean electrical poles with NO streetlamp lights**; `RoadLoop_Night.gif` + `*_night.png`)*
+     - **3rd (Hard):** Dawn *(violet-rose-coral sunrise at the horizon + fading morning stars; `RoadLoop_Dawn.gif` + `*_dawn.png`)*
+     - *Landmark sync rule:* Equipping a scenery MUST update both the driving `RoadLoop_*.gif` and all 5 stop landmark stills (`Jollibee`, `Palengke`, `Munisipyo`, `Hospital`, `School`).
+- **Two-Tier Unlock Logic (Endless Mode Only):**
+  - **Category Unlock (score reached in ANY Endless difficulty — Easy, Medium, or Hard):**
+    - **Decor category:** unlocks at **`1,000`** points *(1★)*
+    - **Jeep Interior category:** unlocks at **`2,500`** points *(2★)*
+    - **Sceneries category:** unlocks at **`5,000`** points *(3★)*
+  - **Per-Item Unlock (specific score thresholds per difficulty in `profile.bestScore.{easy, medium, hard}`):**
+    - Inside every category: **1st item** unlocks at a target score in **Endless Easy**, **2nd item** at a target score in **Endless Medium**, and **3rd item** at a target score in **Endless Hard** *(exact per-item thresholds to be finalized by the team in `js/game/data.js` & `js/game/progress-rules.js`)*.
+- **Icons & UI Assets:** 6 custom `128×128` pixel icons (Fiesta banderitas, Christmas Parol, New Year fireworks, Morning sun & cloud, Night moon & stars, Dawn sunrise) + `Equipped.png` / `Unequipped.png` / `Gas*.png`.
+
+---
+
+## 6. Locked-In Visual, UI & Language Standards
 - **Virtual Stage & Scaling:** Fixed `1280×720` `#stage` stretched edge-to-edge (`scale(scaleX, scaleY)`) via `js/game/layout.js` (no black side bars). Always keep `image-rendering: pixelated;`.
 - **Fonts:** `'Silkscreen', 'Press Start 2P', monospace`.
 - **Language Policy:**
@@ -81,7 +110,7 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
 
 ---
 
-## 6. Commands & Verification Checklist
+## 7. Commands & Verification Checklist
 - **Run local web server** (from repo root):
   ```powershell
   python -m http.server 8000
@@ -103,12 +132,12 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
 
 ---
 
-## 7. Current Handover Status
+## 8. Current Handover Status
 - **Completed:**
-  - `auth-backend`: Firebase Auth + Firestore (`users/{uid}`) + offline `localStorage` cache, zero `4xx` errors.
+  - `auth-backend`: Firebase Auth + Firestore (`users/{uid}`) + offline-only `localStorage` fallback (surfaces Firebase domain/port errors cleanly), zero `4xx` errors.
   - `menu-screens`: Start-Up, Log-In, Sign-Up, Main Menu, and Choose Gamemode screens (`html/login.html`, `css/menu.css`).
   - `game-logic` & `game-visuals`: Complete Driver-POV gameplay screen, calibrated tight-cropped assets, dynamic 9-slice speech bubble, pixel-stepped route progress bar & Green→Yellow→Red timer bar, per-asset hover/click highlights, multi-passenger `"Magkano po?"` + `?` hints, English guided Tutorial, Normal Levels 1–3, Endless Mode jumbled 5 stops + Day 1/2/3 system, and 22 passing unit tests.
 - **Next Up for Groupmates:**
-  1. **`customization-rewards` branch:** Build the Customize screen using `Equipped.png` / `Unequipped.png` / `Gas*.png` and apply equipped scenery, interior, and decor items in `html/game.html` / `play.js`.
+  1. **`customization-rewards` branch:** Add finalized Decor, Jeep Interior, Scenery (GIFs + 15 landmarks), and 6 icon assets to `assets/`, implement the two-tier Endless unlock logic (`1,000` / `2,500` / `5,000` category unlocks + Easy/Medium/Hard per-item thresholds), build the Customize screen (`Equipped.png` / `Unequipped.png` / `Gas*.png`), and apply equipped items in `html/game.html` / `play.js`.
   2. **`audio-and-settings` branch:** Wire real BGM & SFX audio files into `js/game/audio.js` and connect the Settings screen from the Main Menu.
   3. **Final Polish & Merge:** Merge tested section branches → `staging` → `main` and verify live GitHub Pages deployment.
