@@ -1,13 +1,13 @@
 // Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
-import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=27';
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=28';
 import { fitStage } from './layout.js?v=8';
 import { Emitter } from './emitter.js?v=8';
-import { Play, setAnimationsFrozen } from './play.js?v=30';
+import { Play, setAnimationsFrozen } from './play.js?v=31';
 import { TutorialGuide } from './tutorial.js?v=21';
 import { unlock, setSettings, sfx } from './audio.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { init as initProgress, save as saveProgress, getProfile, getState } from './progress.js';
-import { applyTutorialDone, applyLevelComplete, applyEndlessResult } from './progress-rules.js?v=27';
+import { applyTutorialDone, applyLevelComplete, applyEndlessResult } from './progress-rules.js?v=28';
 
 const $ = (id) => document.getElementById(id);
 

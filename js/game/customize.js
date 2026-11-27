@@ -5,19 +5,32 @@
 //     and Equipped.png (EQUIP) / Unequipped.png (UNEQUIP) for unlocked items
 //   - Swaps the left IN-GAME SCREEN preview between NormalPreview.png and the equipped item's preview
 //   - Persists equipped selections to Firebase / localStorage via saveProfile
-import { CUSTOM, CUSTOM_PREVIEW_NORMAL } from './data.js?v=27';
+import { CUSTOM, CUSTOM_CATEGORY_META, CUSTOM_PREVIEW_NORMAL } from './data.js?v=28';
 import {
   highestEndlessScore,
-  itemsForScore,
+  isCategoryUnlocked,
+  getItemLockState,
+  itemsForProfile,
   starsFor,
   isItemUnlocked,
   findCustomItem,
   equipCustomization,
-} from './progress-rules.js?v=27';
+} from './progress-rules.js?v=28';
 import { sfx } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const LOCK_ICON_SRC = '../assets/Lock.png';
+const TIER_SHORT = { easy: 'EASY', medium: 'MED', hard: 'HARD' };
+const TIER_FULL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+function formatLockMessage(item, lock) {
+  const catLabel = CUSTOM_CATEGORY_META[item.category]?.label || item.category.toUpperCase();
+  const diffLabel = TIER_FULL[lock.requiredDifficulty] || 'Easy';
+  if (lock.categoryLocked) {
+    return `Unlock ${catLabel} at ${lock.categoryRequiredScore.toLocaleString()} in any Endless mode, then reach ${lock.requiredScore.toLocaleString()} in Endless ${diffLabel} for ${item.name}!`;
+  }
+  return `Reach ${lock.requiredScore.toLocaleString()} in Endless ${diffLabel} to unlock ${item.name}! (Your ${diffLabel} best: ${lock.currentDifficultyScore.toLocaleString()})`;
+}
 
 export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showToast }) {
   let activeCategory = 'decor';
@@ -89,9 +102,16 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
     baseImg.alt = `${names} Combined In-Game Preview`;
   }
 
-  function renderTabs() {
+  function renderTabs(profile) {
     for (const btn of document.querySelectorAll('#custom-tab-bar .gas-tab-btn')) {
-      btn.classList.toggle('is-active', btn.dataset.cat === activeCategory);
+      const cat = btn.dataset.cat;
+      const meta = CUSTOM_CATEGORY_META[cat];
+      const catUnlocked = isCategoryUnlocked(profile, cat);
+      btn.classList.toggle('is-active', cat === activeCategory);
+      btn.classList.toggle('is-cat-locked', !catUnlocked);
+      btn.title = catUnlocked
+        ? `${meta?.label || cat.toUpperCase()} (Unlocked)`
+        : `${meta?.label || cat.toUpperCase()} — Reach ${(meta?.unlockScore || 0).toLocaleString()} in any Endless mode to unlock`;
     }
   }
 
@@ -104,8 +124,11 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
     const equippedId = profile?.equipped?.[activeCategory] || null;
 
     for (const item of items) {
-      const unlocked = isItemUnlocked(profile, item);
+      const lock = getItemLockState(profile, item);
+      const unlocked = lock.unlocked;
       const equipped = unlocked && equippedId === item.id;
+      const diffShort = TIER_SHORT[item.tier] || 'EASY';
+      const diffFull = TIER_FULL[item.tier] || 'Easy';
 
       const card = document.createElement('div');
       card.className = 'custom-card';
@@ -118,7 +141,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       const icon = document.createElement('img');
       icon.className = 'custom-item-icon';
       icon.src = unlocked ? item.icon : LOCK_ICON_SRC;
-      icon.alt = unlocked ? item.name : `Locked (${item.minScore.toLocaleString()} pts)`;
+      icon.alt = unlocked ? item.name : `Locked (${item.minScore.toLocaleString()} in Endless ${diffFull})`;
       box.append(icon);
 
       const btn = document.createElement('button');
@@ -126,8 +149,8 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       btn.className = 'custom-equip-btn';
       if (!unlocked) {
         btn.classList.add('state-locked');
-        btn.textContent = `${item.minScore.toLocaleString()} PTS`;
-        btn.title = `Reach ${item.minScore.toLocaleString()} in Endless Mode to unlock ${item.name}`;
+        btn.textContent = `${item.minScore.toLocaleString()} ${diffShort}`;
+        btn.title = formatLockMessage(item, lock);
       } else if (equipped) {
         btn.classList.add('state-unequip');
         btn.textContent = 'UNEQUIP';
@@ -145,9 +168,10 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
           showToast?.('Log in first to save your customizations!');
           return;
         }
-        if (!isItemUnlocked(p, item)) {
+        const curLock = getItemLockState(p, item);
+        if (!curLock.unlocked) {
           sfx('wrong');
-          showToast?.(`Reach ${item.minScore.toLocaleString()} in Endless Mode to unlock ${item.name}!`);
+          showToast?.(formatLockMessage(item, curLock));
           return;
         }
 
@@ -156,7 +180,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
         const res = equipCustomization(p, activeCategory, nextId);
         if (res.locked) {
           sfx('wrong');
-          showToast?.(`Reach ${res.requiredScore.toLocaleString()} in Endless Mode to unlock ${item.name}!`);
+          showToast?.(formatLockMessage(item, res));
           return;
         }
 
@@ -181,7 +205,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
     if (adminBar) {
       adminBar.hidden = !profile?.isAdmin;
     }
-    renderTabs();
+    renderTabs(profile);
     renderCards(profile);
     updatePreview(profile);
   }
@@ -195,7 +219,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       const next = JSON.parse(JSON.stringify(p));
       next.bestScore = { easy: score, medium: score, hard: score };
       next.stars = starsFor(score);
-      next.unlocked = itemsForScore(score);
+      next.unlocked = itemsForProfile(next);
       next.equipped = { decor: null, interior: null, scenery: null, ...(next.equipped || {}) };
       for (const cat of Object.keys(CUSTOM)) {
         const curItem = findCustomItem(cat, next.equipped[cat]);
@@ -205,7 +229,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       }
       sfx('tap');
       await onProfileUpdated?.(next);
-      showToast?.(`Admin Test: Highscore set to ${score.toLocaleString()}`, true, 2200);
+      showToast?.(`Admin Test: All Endless best scores set to ${score.toLocaleString()}`, true, 2200);
       render();
     };
   }
@@ -213,9 +237,19 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
   // Bind category tab buttons
   for (const btn of document.querySelectorAll('#custom-tab-bar .gas-tab-btn')) {
     btn.onclick = () => {
-      if (btn.dataset.cat === activeCategory) return;
+      const cat = btn.dataset.cat;
+      const p = currentProfile();
+      if (!isCategoryUnlocked(p, cat)) {
+        const meta = CUSTOM_CATEGORY_META[cat];
+        showToast?.(
+          `${meta?.label || cat.toUpperCase()} unlocks at ${(meta?.unlockScore || 0).toLocaleString()} in any Endless mode!`,
+          false,
+          3000
+        );
+      }
+      if (cat === activeCategory) return;
       sfx('tap');
-      activeCategory = btn.dataset.cat;
+      activeCategory = cat;
       render();
     };
   }

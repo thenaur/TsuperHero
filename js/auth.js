@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth } from "./firebase-config.js";
 import { createProfile, loadProfile, saveProfile } from "./storage.js";
-import { CUSTOM } from "./game/data.js?v=25";
+import { CUSTOM } from "./game/data.js?v=28";
 
 const EMAIL_DOMAIN = "tsuperhero.app"; // placeholder; cannot receive mail
 const PIN_PREFIX = "tsuper-"; // Firebase needs 6+ characters; "tsuper-1234" is 11

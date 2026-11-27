@@ -330,6 +330,16 @@ body.bg-customize {
   color: #ffd23f;
 }
 
+.gas-tab-btn.is-cat-locked {
+  filter: grayscale(0.45) brightness(0.75);
+  color: #cfd5df;
+}
+
+.gas-tab-btn.is-cat-locked.is-active {
+  filter: grayscale(0.3) brightness(0.65);
+  color: #ffd23f;
+}
+
 /* Brown Interior Container inside Gas.png: 2 top + 1 bottom-center cards */
 #custom-items-grid {
   position: absolute;
@@ -438,8 +448,9 @@ body.bg-customize {
   border: 4px solid #000;
   border-top-width: 3px;
   color: #e5e7eb;
-  font-size: 11px;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
   cursor: not-allowed;
 }
 

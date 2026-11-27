@@ -6,12 +6,12 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=27';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=28';
 import { createRun } from './session.js?v=25';
 import { fareOf } from './logic.js?v=25';
 import { formatAmount, formatPeso } from './money.js?v=17';
 import { pesoWord, amountWord, capitalize } from './numbers.js';
-import { findCustomItem, isItemUnlocked } from './progress-rules.js?v=27';
+import { findCustomItem, isItemUnlocked } from './progress-rules.js?v=28';
 import { sfx } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
