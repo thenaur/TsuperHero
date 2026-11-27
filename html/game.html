@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TsuperHero – Gameplay</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../css/game.css?v=25">
+  <link rel="stylesheet" href="../css/game.css?v=27">
 </head>
 <body>
   <div id="stage">
@@ -153,25 +153,46 @@
       </div>
     </div>
 
-    <!-- MENU & Settings Modal -->
+    <!-- PAUSE Modal -->
     <div id="modal-menu" class="modal-backdrop" hidden>
-      <div class="modal-card">
-        <h2>Menu &amp; Settings</h2>
-        <div class="setting-row">
-          <label for="set-volume">Volume</label>
-          <input id="set-volume" type="range" min="0" max="100" value="80">
+      <div class="modal-card pause-card" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <h2 id="pause-title" class="pause-title">PAUSE</h2>
+
+        <div class="setting-row pause-row">
+          <label for="set-volume">VOLUME</label>
+          <input id="set-volume" class="pause-slider" type="range" min="0" max="100" value="80" aria-label="Volume">
         </div>
-        <div class="setting-row">
-          <label for="set-sfx">Sound Effects</label>
-          <input id="set-sfx" type="checkbox" checked>
+        <div class="setting-row pause-row">
+          <label for="set-sfx">SOUND EFFECTS</label>
+          <input id="set-sfx" class="pause-checkbox" type="checkbox" checked aria-label="Sound Effects">
         </div>
-        <div class="modal-btns">
-          <button type="button" data-start-stage="tutorial">Replay Tutorial (Level 0)</button>
-          <button id="menu-restart-stage" type="button" data-start-stage="level1">Restart Level 1</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=gamemode'">Choose Gamemode</button>
-          <button type="button" class="secondary" onclick="location.href='./login.html?section=menu'">Back to Main Menu</button>
-          <button id="menu-close" type="button" class="secondary">Resume Game</button>
+
+        <button id="menu-how-to-play" class="pause-btn pause-howto-btn" type="button" data-start-stage="tutorial">
+          HOW TO PLAY?
+        </button>
+
+        <div class="pause-icon-row">
+          <button id="menu-restart-stage" class="pause-btn pause-icon-btn" type="button" data-start-stage="level1" title="Restart Level 1" aria-label="Restart Level 1">
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+              <path d="M12 5a7 7 0 1 1-6.1 3.6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="square"/>
+              <polygon points="3,4 11,4 6,11" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button id="menu-close" class="pause-btn pause-icon-btn pause-play-btn" type="button" title="Resume Game" aria-label="Resume Game">
+            <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+              <polygon points="6,4 20,12 6,20" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button id="menu-home" class="pause-btn pause-icon-btn" type="button" title="Back to Main Menu" aria-label="Back to Main Menu" onclick="location.href='./login.html?section=menu'">
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+              <path d="M3 11.5L12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"/>
+              <path d="M6 10.5V20h4.5v-5.5h3V20H18v-9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="miter"/>
+            </svg>
+          </button>
         </div>
+
         <div class="meta-footer">
           <span id="account-badge">Guest Mode</span>
           <span id="version-label">v0.2.0-dev</span>
@@ -196,6 +217,6 @@
     </div>
   </div>
 
-  <script type="module" src="../js/game/main.js?v=27"></script>
+  <script type="module" src="../js/game/main.js?v=29"></script>
 </body>
 </html>
