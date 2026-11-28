@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultProfile, normalizeProfile } from '../js/profile.js';
-import { CUSTOM, CUSTOM_CATEGORY_META } from '../js/game/data.js';
+import { defaultProfile, normalizeProfile } from '../js/domain/profile.js';
+import { CUSTOM, CUSTOM_CATEGORY_META } from '../js/domain/data.js';
 import {
   starsFor,
   isUnlocked,
@@ -16,7 +16,7 @@ import {
   applyLevelComplete,
   applyEndlessResult,
   applyTutorialDone,
-} from '../js/game/progress-rules.js';
+} from '../js/domain/progress-rules.js';
 
 test('stars at 1,000 / 2,500 / 5,000', () => {
   assert.equal(starsFor(999), 0);

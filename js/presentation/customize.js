@@ -1,11 +1,7 @@
-// Customization screen controller:
-//   - Displays Endless Mode highest score (across Easy/Medium/Hard) in Gas.png LCD
-//   - Switches between DECOR (GasButton1), INTERIOR (GasButton2), SCENERY (GasButton3)
-//   - Renders 3 item cards (top-left, top-right, bottom-center) with Lock.png for locked items
-//     and Equipped.png (EQUIP) / Unequipped.png (UNEQUIP) for unlocked items
-//   - Swaps the left IN-GAME SCREEN preview between NormalPreview.png and the equipped item's preview
-//   - Persists equipped selections to Firebase / localStorage via saveProfile
-import { CUSTOM, CUSTOM_CATEGORY_META, CUSTOM_PREVIEW_NORMAL } from './data.js?v=28';
+// Presentation Layer: Customization screen UI controller.
+// Depends ONLY on Domain rules, Presentation asset catalog, and injected callbacks/audio.
+// Zero direct Infrastructure (Firebase/localStorage/WebAudio) imports.
+import { CUSTOM, CUSTOM_CATEGORY_META } from '../domain/data.js?v=29';
 import {
   highestEndlessScore,
   isCategoryUnlocked,
@@ -15,11 +11,10 @@ import {
   isItemUnlocked,
   findCustomItem,
   equipCustomization,
-} from './progress-rules.js?v=28';
-import { sfx } from './audio.js';
+} from '../domain/progress-rules.js?v=29';
+import { CUSTOM_PREVIEW_NORMAL, LOCK_ICON_SRC, getCustomAssets } from './assets.js?v=1';
 
 const $ = (id) => document.getElementById(id);
-const LOCK_ICON_SRC = '../assets/Lock.png';
 const TIER_SHORT = { easy: 'EASY', medium: 'MED', hard: 'HARD' };
 const TIER_FULL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
@@ -32,8 +27,9 @@ function formatLockMessage(item, lock) {
   return `Reach ${lock.requiredScore.toLocaleString()} in Endless ${diffLabel} to unlock ${item.name}! (Your ${diffLabel} best: ${lock.currentDifficultyScore.toLocaleString()})`;
 }
 
-export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showToast }) {
+export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showToast, audio }) {
   let activeCategory = 'decor';
+  const playSfx = (name) => audio?.sfx?.(name);
 
   function currentProfile() {
     return getSession()?.profile || null;
@@ -57,7 +53,6 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
     const eqScenery = resolveEquipped(profile, 'scenery');
     const equippedCount = (eqDecor ? 1 : 0) + (eqInterior ? 1 : 0) + (eqScenery ? 1 : 0);
 
-    // Reset overlay layers by default
     if (decorImg) {
       decorImg.hidden = true;
       decorImg.classList.remove('decor-dice', 'decor-freshener', 'decor-lily');
@@ -65,37 +60,42 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
     if (interiorImg) interiorImg.hidden = true;
     if (hudImg) hudImg.hidden = true;
 
-    // 0 equipped -> pure NormalPreview.png
     if (equippedCount === 0) {
       if (baseImg.getAttribute('src') !== CUSTOM_PREVIEW_NORMAL) baseImg.src = CUSTOM_PREVIEW_NORMAL;
       baseImg.alt = 'Normal In-Game Preview';
       return;
     }
 
-    // Exactly 1 equipped -> show the artist's dedicated single-item preview PNG directly
     if (equippedCount === 1) {
       const only = eqDecor || eqInterior || eqScenery;
-      if (baseImg.getAttribute('src') !== only.preview) baseImg.src = only.preview;
+      const assets = getCustomAssets(only.id);
+      if (assets.preview && baseImg.getAttribute('src') !== assets.preview) baseImg.src = assets.preview;
       baseImg.alt = `${only.name} In-Game Preview`;
       return;
     }
 
-    // 2 or 3 categories equipped together -> composite all equipped layers live!
-    const baseSrc = eqScenery ? eqScenery.preview : CUSTOM_PREVIEW_NORMAL;
+    const sceneryAssets = eqScenery ? getCustomAssets(eqScenery.id) : null;
+    const baseSrc = sceneryAssets?.preview || CUSTOM_PREVIEW_NORMAL;
     if (baseImg.getAttribute('src') !== baseSrc) baseImg.src = baseSrc;
 
-    if (eqDecor && decorImg && eqDecor.decorImg) {
-      decorImg.src = eqDecor.decorImg;
-      decorImg.alt = `${eqDecor.name} Decor`;
-      decorImg.classList.add(eqDecor.id);
-      decorImg.hidden = false;
+    if (eqDecor && decorImg) {
+      const decorAssets = getCustomAssets(eqDecor.id);
+      if (decorAssets.decorImg) {
+        decorImg.src = decorAssets.decorImg;
+        decorImg.alt = `${eqDecor.name} Decor`;
+        decorImg.classList.add(eqDecor.id);
+        decorImg.hidden = false;
+      }
     }
 
-    if (eqInterior && interiorImg && eqInterior.interiorImg) {
-      interiorImg.src = eqInterior.interiorImg;
-      interiorImg.alt = `${eqInterior.name} Interior`;
-      interiorImg.hidden = false;
-      if (hudImg) hudImg.hidden = false;
+    if (eqInterior && interiorImg) {
+      const interiorAssets = getCustomAssets(eqInterior.id);
+      if (interiorAssets.interiorImg) {
+        interiorImg.src = interiorAssets.interiorImg;
+        interiorImg.alt = `${eqInterior.name} Interior`;
+        interiorImg.hidden = false;
+        if (hudImg) hudImg.hidden = false;
+      }
     }
 
     const names = [eqScenery?.name, eqInterior?.name, eqDecor?.name].filter(Boolean).join(' + ');
@@ -129,6 +129,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       const equipped = unlocked && equippedId === item.id;
       const diffShort = TIER_SHORT[item.tier] || 'EASY';
       const diffFull = TIER_FULL[item.tier] || 'Easy';
+      const assets = getCustomAssets(item.id);
 
       const card = document.createElement('div');
       card.className = 'custom-card';
@@ -140,7 +141,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
 
       const icon = document.createElement('img');
       icon.className = 'custom-item-icon';
-      icon.src = unlocked ? item.icon : LOCK_ICON_SRC;
+      icon.src = unlocked ? (assets.icon || LOCK_ICON_SRC) : LOCK_ICON_SRC;
       icon.alt = unlocked ? item.name : `Locked (${item.minScore.toLocaleString()} in Endless ${diffFull})`;
       box.append(icon);
 
@@ -164,13 +165,13 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
       const handleClick = async () => {
         const p = currentProfile();
         if (!p) {
-          sfx('wrong');
+          playSfx('wrong');
           showToast?.('Log in first to save your customizations!');
           return;
         }
         const curLock = getItemLockState(p, item);
         if (!curLock.unlocked) {
-          sfx('wrong');
+          playSfx('wrong');
           showToast?.(formatLockMessage(item, curLock));
           return;
         }
@@ -179,12 +180,12 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
         const nextId = isCurrentlyEquipped ? null : item.id;
         const res = equipCustomization(p, activeCategory, nextId);
         if (res.locked) {
-          sfx('wrong');
+          playSfx('wrong');
           showToast?.(formatLockMessage(item, res));
           return;
         }
 
-        sfx('tap');
+        playSfx('tap');
         await onProfileUpdated?.(res.profile);
         render();
       };
@@ -227,7 +228,7 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
           next.equipped[cat] = null;
         }
       }
-      sfx('tap');
+      playSfx('tap');
       await onProfileUpdated?.(next);
       showToast?.(`Admin Test: All Endless best scores set to ${score.toLocaleString()}`, true, 2200);
       render();
@@ -248,13 +249,12 @@ export function createCustomizeUI({ getSession, onProfileUpdated, onBack, showTo
         );
       }
       if (cat === activeCategory) return;
-      sfx('tap');
+      playSfx('tap');
       activeCategory = cat;
       render();
     };
   }
 
-  // Bind Back button
   const backBtn = $('btn-back-customize');
   if (backBtn) {
     backBtn.onclick = () => {

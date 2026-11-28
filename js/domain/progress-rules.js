@@ -1,5 +1,6 @@
-// Pure rules for unlocking levels, stars, and customization. No Firebase, no DOM.
-import { STAR_THRESHOLDS, CUSTOM, CUSTOM_CATEGORY_META, LEVEL_ORDER } from './data.js?v=28';
+// Domain Layer: Pure rules for unlocking levels, stars, and two-tier customization.
+// Zero external dependencies (no DOM, no Firebase, no storage).
+import { STAR_THRESHOLDS, CUSTOM, CUSTOM_CATEGORY_META, LEVEL_ORDER } from './data.js?v=29';
 
 const clone = (p) => JSON.parse(JSON.stringify(p));
 const ALL_ITEMS = Object.values(CUSTOM).flat();

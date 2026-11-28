@@ -1,7 +1,7 @@
-// Pure game rules: fares, passengers, payments, fare questions, scoring, route jumbling.
-// No DOM here, so it can be tested with Node (see tests/).
-import { MAX_PAYMENT, SCORING } from './data.js?v=25';
-import { toCentavos } from './money.js';
+// Domain Layer: Pure game rules: fares, passengers, payments, fare questions, scoring, route jumbling.
+// Zero external dependencies (no DOM, no Firebase, no storage).
+import { MAX_PAYMENT, SCORING } from './data.js?v=29';
+import { toCentavos } from './money.js?v=18';
 
 /** Small seedable random generator, so tests are repeatable. */
 export function mulberry32(seed) {
@@ -105,7 +105,6 @@ export function makeFareQuestion(rng, stage, total, singleFare = total) {
     const others = stage.vocab.filter((v) => v !== pesos)
       .sort((a, b) => Math.abs(a - pesos) - Math.abs(b - pesos));
     if (!others.length) return null;
-    // For multi-passenger groups, include the single-person fare as a smart distractor (e.g. DIYES vs BENTE)
     if (singlePesos && singlePesos !== pesos && stage.vocab.includes(singlePesos) && rng() < 0.6) {
       wrong = singlePesos;
     } else {

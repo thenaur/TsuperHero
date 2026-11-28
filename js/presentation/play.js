@@ -6,17 +6,20 @@
 //   3. Time bar snaps pixel-by-pixel and shifts Green -> Yellow -> Red as time runs out.
 //   4. Reaching a stop fades to black, shows the stop landmark + "THANK YOU PO!",
 //      then fades to black and resumes (or switches to Day 2/3/... in Endless Mode).
-import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL, STOP_BACKGROUNDS } from './data.js?v=28';
-import { createRun } from './session.js?v=25';
-import { fareOf } from './logic.js?v=25';
-import { formatAmount, formatPeso } from './money.js?v=17';
-import { pesoWord, amountWord, capitalize } from './numbers.js';
-import { findCustomItem, isItemUnlocked } from './progress-rules.js?v=28';
-import { sfx } from './audio.js';
+import { DENOMS, HINT_MS, COUNT_WORDS, WORDLIST_ALL } from '../domain/data.js?v=29';
+import { fareOf } from '../domain/logic.js?v=26';
+import { formatAmount, formatPeso } from '../domain/money.js?v=18';
+import { pesoWord, amountWord, capitalize } from '../domain/numbers.js?v=1';
+import { findCustomItem, isItemUnlocked } from '../domain/progress-rules.js?v=29';
+import { createRun } from '../application/session.js?v=26';
+import {
+  DEFAULT_ROAD_LOOP_SRC,
+  DEFAULT_INTERIOR_SRC,
+  STOP_BACKGROUNDS,
+  getCustomAssets,
+} from './assets.js?v=1';
 
 const $ = (id) => document.getElementById(id);
-const DEFAULT_ROAD_LOOP_SRC = '../assets/RoadLoop.gif';
-const DEFAULT_INTERIOR_SRC = '../assets/JeepInterior.png';
 const FADE_MS = 500;
 const THANK_YOU_MS = 3400;
 const DAY_BANNER_MS = 2000;
@@ -82,11 +85,12 @@ function shortStageBadge(stage, day = 1) {
 }
 
 export class Play {
-  constructor(stage, { bus, onEnd, rng, profile } = {}) {
+  constructor(stage, { bus, onEnd, rng, profile, audio } = {}) {
     this.stage = stage;
     this.bus = bus;
     this.onEnd = onEnd;
     this.profile = profile || null;
+    this.sfx = (name) => audio?.sfx?.(name);
     this.run = createRun(stage, { rng });
     this.roadLoopSrc = DEFAULT_ROAD_LOOP_SRC;
     this.stopBackgrounds = STOP_BACKGROUNDS;
@@ -125,8 +129,9 @@ export class Play {
     // 1. Scenery: sync driving RoadLoop GIF + all 5 destination landmark stills
     const sceneryItem = findCustomItem('scenery', eq.scenery);
     if (sceneryItem && isItemUnlocked(profile, sceneryItem)) {
-      this.roadLoopSrc = sceneryItem.roadGif || DEFAULT_ROAD_LOOP_SRC;
-      this.stopBackgrounds = sceneryItem.stopBackgrounds || STOP_BACKGROUNDS;
+      const sceneryAssets = getCustomAssets(sceneryItem.id);
+      this.roadLoopSrc = sceneryAssets.roadGif || DEFAULT_ROAD_LOOP_SRC;
+      this.stopBackgrounds = sceneryAssets.stopBackgrounds || STOP_BACKGROUNDS;
     } else {
       this.roadLoopSrc = DEFAULT_ROAD_LOOP_SRC;
       this.stopBackgrounds = STOP_BACKGROUNDS;
@@ -137,8 +142,9 @@ export class Play {
     const decorItem = findCustomItem('decor', eq.decor);
     if (decorEl) {
       decorEl.classList.remove('decor-dice', 'decor-freshener', 'decor-lily');
-      if (decorItem && isItemUnlocked(profile, decorItem) && decorItem.decorImg) {
-        decorEl.src = decorItem.decorImg;
+      const decorAssets = decorItem ? getCustomAssets(decorItem.id) : null;
+      if (decorItem && isItemUnlocked(profile, decorItem) && decorAssets?.decorImg) {
+        decorEl.src = decorAssets.decorImg;
         decorEl.alt = decorItem.name;
         decorEl.classList.add(decorItem.id);
         decorEl.hidden = false;
@@ -152,10 +158,11 @@ export class Play {
     const sideTabs = $('side-tabs');
     const interiorItem = findCustomItem('interior', eq.interior);
     if (interiorEl) {
-      if (interiorItem && isItemUnlocked(profile, interiorItem) && interiorItem.interiorImg) {
-        interiorEl.src = interiorItem.interiorImg;
-        if (sideTabs && interiorItem.sideTabsTop) {
-          sideTabs.style.top = `${interiorItem.sideTabsTop}px`;
+      const interiorAssets = interiorItem ? getCustomAssets(interiorItem.id) : null;
+      if (interiorItem && isItemUnlocked(profile, interiorItem) && interiorAssets?.interiorImg) {
+        interiorEl.src = interiorAssets.interiorImg;
+        if (sideTabs && interiorAssets.sideTabsTop) {
+          sideTabs.style.top = `${interiorAssets.sideTabsTop}px`;
         }
       } else {
         interiorEl.src = DEFAULT_INTERIOR_SRC;
@@ -450,13 +457,13 @@ export class Play {
 
     this.showBubbleText('');
     if (missedOnArrival) {
-      sfx('wrong');
+      this.sfx('wrong');
       const icons = document.querySelectorAll('#hud-lives .heart-icon');
       const nextLives = Math.max(0, run.lives - 1);
       icons.forEach((img, i) => img.classList.toggle('lost', i >= nextLives));
       this.triggerHeartLoss($('timer-bar-wrap'), nextLives);
     } else {
-      sfx('stop');
+      this.sfx('stop');
     }
     curtain.classList.add('dark');
 
@@ -701,14 +708,14 @@ export class Play {
   // ---------- actions ----------
   addMoney(value) {
     if (this.isAtStopScene || this.run.addMoney(value) === null) return;
-    sfx('coin');
+    this.sfx('coin');
     this.render();
     this.emit('change', this.run.givenTotal);
   }
 
   changeMoney(action) {
     if (this.isAtStopScene || action() === null) return;
-    sfx('tap');
+    this.sfx('tap');
     this.render();
     this.emit('change', this.run.givenTotal);
   }
@@ -718,7 +725,7 @@ export class Play {
     const a = this.run.answer(value);
     if (!a) return;
     this.setHint(false);
-    sfx(a.correct ? 'correct' : 'wrong');
+    this.sfx(a.correct ? 'correct' : 'wrong');
 
     if (!a.correct && !this.run.practice) {
       if (a.livesLeft <= 0) this.progressPaused = true;
@@ -755,7 +762,7 @@ export class Play {
 
   useHint() {
     if (this.isAtStopScene || this.hintOn || !this.run.useHint()) return;
-    sfx('tap');
+    this.sfx('tap');
     this.setHint(true);
     this.emit('hint', this.run.hintsLeft);
   }
@@ -805,7 +812,7 @@ export class Play {
     if (this.isAtStopScene) return;
     const res = this.run.timeout();
     if (!res) return;
-    sfx('wrong');
+    this.sfx('wrong');
     this.setHint(false);
     if (res.livesLeft <= 0) this.progressPaused = true;
     this.render();
@@ -821,7 +828,7 @@ export class Play {
     if (!res) return;
     this.emit('submit', res);
     if (res.retry) {
-      sfx('wrong');
+      this.sfx('wrong');
       this.render();
       this.showFeedback('Wrong change! Try again!', 'bad');
       this.feedbackTimer = this.later(1500, () => this.hideFeedback());
@@ -839,12 +846,12 @@ export class Play {
 
     this.render();
     if (res.correct) {
-      sfx('correct');
+      this.sfx('correct');
       this.showBubbleText('SALAMAT PO!', '', true);
       this.cancel(this.advanceTimer);
       this.advanceTimer = this.later(850, () => this.advance());
     } else {
-      sfx('wrong');
+      this.sfx('wrong');
       this.triggerHeartLoss($('payment-box'));
       this.showFeedback(`Wrong change! Exact change: ₱${formatAmount(res.expected)}`, 'bad');
       this.cancel(this.advanceTimer);
@@ -895,7 +902,7 @@ export class Play {
       void drawer.offsetWidth;
       drawer.classList.add('pop-in');
     }
-    if (emit) { sfx('tap'); this.emit('drawer', panel); }
+    if (emit) { this.sfx('tap'); this.emit('drawer', panel); }
   }
 
   showFeedback(text, kind, withButton = false) {

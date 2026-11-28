@@ -1,4 +1,4 @@
-// One play-through of a stage (a "run"). A small state machine with no DOM.
+// Application Layer: One play-through of a stage (a "run"). Pure state machine (no DOM, no I/O).
 //
 // Continuous-route progress bar logic:
 //   - Passengers keep coming one after another on the current leg (stopIdx)
@@ -9,9 +9,9 @@
 //   - Endless Mode: the 5 stops are jumbled each Day. Reaching the final stop
 //     with lives > 0 advances to Day 2, Day 3, ... with freshly jumbled stops!
 //   - Running out of lives -> 'failed' (Normal) or 'gameover' (Endless).
-import { DENOMS, MAX_PIECES, SCORING } from './data.js?v=25';
-import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from './logic.js?v=25';
-import { sum } from './money.js?v=17';
+import { DENOMS, MAX_PIECES, SCORING } from '../domain/data.js?v=29';
+import { makePassenger, fixedPassenger, validateRoute, jumbleRoute, scorePoints } from '../domain/logic.js?v=26';
+import { sum } from '../domain/money.js?v=18';
 
 export class Run {
   constructor(stage, rng = Math.random) {
@@ -62,7 +62,6 @@ export class Run {
     this.lastResult = null;
 
     if (this.practice && this.stage.fixedQueue) {
-      // Skip any fixed tutorial entries belonging to already-passed origin stops
       while (
         this._tutorialSpawned < this.stage.fixedQueue.length &&
         (this.stage.fixedQueue[this._tutorialSpawned].board < this.stopIdx ||
@@ -82,8 +81,6 @@ export class Run {
       }
     }
 
-    // Never ask a "Magkano po?" question twice in a row so it stays kid-friendly.
-    // Passengers strictly board at `this.stopIdx` (current origin) and travel to a stop ahead (`dest > this.stopIdx`).
     this.current = makePassenger(this.rng, this.stage, this.stopIdx, this.route, {
       allowQuestion: !this._lastAskedQuestion,
     });
@@ -195,12 +192,7 @@ export class Run {
     return this.phase;
   }
 
-  /**
-   * Called when the bottom progress bar reaches the next stop.
-   * If the player reaches a stop in Normal/Endless mode with any pending passenger
-   * (unanswered 'question' or unfinished 'paying' calculation), automatically deducts
-   * 1 life and resets streak before advancing.
-   */
+  /** Called when the bottom progress bar reaches the next stop. */
   arrive() {
     if (this.phase === 'idle' || this.phase === 'complete' || this.phase === 'failed' || this.phase === 'gameover') {
       return null;
@@ -238,7 +230,6 @@ export class Run {
         this.phase = 'complete';
         return this.phase;
       }
-      // Endless Mode: switch to Day 2, Day 3, ... with freshly jumbled 5 stops!
       this.day++;
       this.lap++;
       this.stopIdx = 0;

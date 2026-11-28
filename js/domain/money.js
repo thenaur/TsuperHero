@@ -1,4 +1,6 @@
-// Money helpers. All amounts are whole centavos (integers).
+// Domain Layer: Money value helpers. All amounts are whole centavos (integers).
+// Zero external dependencies (no DOM, no storage, no network).
+
 export const toCentavos = (pesos) => Math.round(pesos * 100);
 
 /** 1250 -> "12.50" */
@@ -7,6 +9,7 @@ export function formatAmount(c) {
   const a = Math.abs(c);
   return `${sign}${Math.floor(a / 100)}.${String(a % 100).padStart(2, '0')}`;
 }
+
 export const formatPeso = (c) => '₱' + formatAmount(c);
 
 export const sum = (arr) => arr.reduce((a, b) => a + b, 0);
