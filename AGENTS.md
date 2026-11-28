@@ -9,10 +9,13 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
 - **Tech Stack:** Plain HTML5, CSS3, and vanilla **ES-module JavaScript** (`type="module"`). **Do NOT add React, Vue, TypeScript, Tailwind, or build bundlers** — the site deploys directly as static files on **GitHub Pages**.
 - **Architecture:**
   - **Physical (Deployment):** **Two-Tier Client–BaaS** (Static Web Client ↔ Firebase Auth + Cloud Firestore + `localStorage` cache). No custom backend server.
-  - **Logical (Inside Client):** Clean **3-layer separation**:
-    1. **Presentation / UI Layer** (`html/`, `css/`, `js/game/play.js`, `tutorial.js`, `layout.js`, `main.js`) — owns all DOM manipulation, animations, and audio triggers.
-    2. **Domain / Pure Game Logic Layer** (`js/game/data.js`, `logic.js`, `session.js`, `money.js`, `numbers.js`, `progress-rules.js`) — **MUST remain 100% DOM-free** so Node.js unit tests run directly without a browser.
-    3. **Data Access Layer** (`js/firebase-config.js`, `auth.js`, `storage.js`, `js/game/progress.js`, `settings.js`) — wraps Firebase SDK and `localStorage`.
+  - **Logical (Inside Client):** **Strict 4-Ring Onion (Onionskin) Architecture** (all dependencies point **inward only**, enforced by `tests/architecture.test.js`):
+    1. **Ring 1 — Domain Core (`js/domain/`):** `money.js`, `numbers.js`, `profile.js`, `data.js`, `logic.js`, `progress-rules.js` — **100% pure & dependency-free** (imports ONLY `js/domain/*`; zero DOM, Firebase, `localStorage`, or UI asset paths).
+    2. **Ring 2 — Application Services & Ports (`js/application/`):** `emitter.js`, `session.js`, `progress-service.js`, `auth-service.js` — pure use cases & state machines depending ONLY on `js/domain/*` and injected ports (`ProfileRepository`, `AuthGateway`, `SessionGateway`).
+    3. **Ring 3 — Outer Adapters & Presentation:**
+       - **Infrastructure (`js/infrastructure/`):** `firebase-config.js`, `firebase-profile-repo.js`, `firebase-auth-gateway.js`, `firebase-session-gateway.js`, `settings-store.js`, `web-audio.js` — concrete Firebase, `localStorage`, and Web Audio adapters.
+       - **Presentation (`js/presentation/`):** `assets.js`, `layout.js`, `play.js`, `tutorial.js`, `customize.js`, `menu-controller.js` (+ `html/`, `css/`) — DOM views, asset catalog, and UI controllers. **Never imports `js/infrastructure/*` or Firebase directly.**
+    4. **Ring 4 — Composition Roots (`js/composition/`):** `menu-app.js` (for `html/login.html`) and `game-app.js` (for `html/game.html`) — the ONLY entry points that instantiate Infrastructure adapters and inject them into Application services and Presentation controllers.
 
 ---
 
@@ -30,11 +33,13 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
 ---
 
 ## 3. Hard Engineering Rules (Never Break These)
-1. **Zero `4xx` HTTP Errors:** Every HTML page MUST keep `<link rel="icon" href="data:,">`. Every asset path MUST exist with **exact capitalization** (Windows is case-insensitive, GitHub Pages Linux is case-sensitive!). Preserve `localStorage` fallbacks in `auth.js`, `storage.js`, and `progress.js`.
-2. **Integer Centavos Only:** All currency logic MUST use integer centavos (`₱10` = `1000`, `₱12.50` = `1250`) via `js/game/money.js`. Never use floating-point peso math.
-3. **Keep Domain Logic DOM-Free:** Never reference `document`, `window`, or `localStorage` inside `data.js`, `logic.js`, `session.js`, `money.js`, `numbers.js`, or `progress-rules.js`.
-4. **ES Module Cache-Busting:** Browsers cache nested ES module imports aggressively. When modifying `js/game/*.js` or `css/game.css`, bump the `?v=N` query string consistently along the import chain (`html/game.html` → `main.js` → `play.js` → `session.js`).
-5. **Firebase API Key:** The web API key in `js/firebase-config.js` is intentionally public and domain-restricted in Google Cloud (`localhost`, `127.0.0.1:8000`, `https://thenaur.github.io/*`). Do not remove or break `firebase-config.js`.
+1. **Zero `4xx` HTTP Errors:** Every HTML page MUST keep `<link rel="icon" href="data:,">`. Every asset path MUST exist with **exact capitalization** (Windows is case-insensitive, GitHub Pages Linux is case-sensitive!) — enforced by `tests/architecture.test.js`. Preserve `localStorage` fallbacks in `js/infrastructure/firebase-auth-gateway.js` and `firebase-profile-repo.js`.
+2. **Integer Centavos Only:** All currency logic MUST use integer centavos (`₱10` = `1000`, `₱12.50` = `1250`) via `js/domain/money.js`. Never use floating-point peso math.
+3. **Preserve Onion Ring Boundaries:**
+   - Never reference `document`, `window`, `localStorage`, `sessionStorage`, `firebase`, or `../assets/` inside `js/domain/` or `js/application/`.
+   - Never import `js/infrastructure/` or Firebase directly inside `js/presentation/` or `html/*.html` — always inject adapters from `js/composition/`.
+4. **ES Module Cache-Busting:** Browsers cache nested ES module imports aggressively. When modifying files under `js/` or `css/`, bump the `?v=N` query string consistently along the import chain.
+5. **Firebase API Key:** The web API key in `js/infrastructure/firebase-config.js` is intentionally public and domain-restricted in Google Cloud (`localhost`, `127.0.0.1:8000`, `https://thenaur.github.io/*`). Do not remove or break `firebase-config.js`.
 
 ---
 
@@ -121,13 +126,13 @@ Read this file carefully before making any changes to **TsuperHero**. Every rule
     - `http://127.0.0.1:8000/html/game.html?stage=level1` (or `level2`, `level3`)
     - `http://127.0.0.1:8000/html/game.html?stage=endless-easy` (or `endless-medium`, `endless-hard`)
   - Always hard-refresh with **`Ctrl + F5`** after edits.
-- **Run automated unit tests** (MUST pass with 0 failures before any commit):
+- **Run automated unit & Onion architecture tests** (MUST pass with 0 failures before any commit):
   ```powershell
-  node --test tests/money.test.js tests/game.test.js tests/progress.test.js
+  npm test
   ```
-- **Syntax check browser-only modules:**
+- **Syntax check all JS modules across all rings:**
   ```powershell
-  node --check js/game/play.js; node --check js/game/tutorial.js; node --check js/game/main.js
+  Get-ChildItem -Recurse js -Filter *.js | ForEach-Object { node --check $_.FullName }
   ```
 
 ---

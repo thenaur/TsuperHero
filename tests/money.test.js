@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pesoWord, amountWord } from '../js/game/numbers.js';
-import { formatAmount, toCentavos, breakdown } from '../js/game/money.js';
+import { pesoWord, amountWord } from '../js/domain/numbers.js';
+import { formatAmount, toCentavos, breakdown } from '../js/domain/money.js';
 
 test('number words used in the document', () => {
   assert.equal(pesoWord(5), 'singko');

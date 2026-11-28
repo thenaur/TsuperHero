@@ -1,23 +1,27 @@
-// Main controller for gameplay: supports Level 0 (Tutorial), Levels 1–3, and Endless (Easy/Medium/Hard).
-import { STAGES, LEVEL_ORDER, VERSION, getStage } from './data.js?v=28';
-import { fitStage } from './layout.js?v=8';
-import { Emitter } from './emitter.js?v=8';
-import { Play, setAnimationsFrozen } from './play.js?v=31';
-import { TutorialGuide } from './tutorial.js?v=21';
-import { unlock, setSettings, sfx } from './audio.js';
-import { loadSettings, saveSettings } from './settings.js';
-import { init as initProgress, save as saveProgress, getProfile, getState } from './progress.js';
-import { applyTutorialDone, applyLevelComplete, applyEndlessResult } from './progress-rules.js?v=28';
+// Composition Root (Outermost Ring): Bootstraps html/game.html.
+// Wires concrete Infrastructure adapters into Application services and Presentation views.
+import { STAGES, LEVEL_ORDER, VERSION, getStage } from '../domain/data.js?v=29';
+import { Emitter } from '../application/emitter.js?v=1';
+import { createProgressService } from '../application/progress-service.js?v=1';
+import { createFirebaseSessionGateway } from '../infrastructure/firebase-session-gateway.js?v=1';
+import { createLocalSettingsStore } from '../infrastructure/settings-store.js?v=1';
+import { createWebAudioAdapter } from '../infrastructure/web-audio.js?v=1';
+import { fitStage } from '../presentation/layout.js?v=9';
+import { Play, setAnimationsFrozen } from '../presentation/play.js?v=32';
+import { TutorialGuide } from '../presentation/tutorial.js?v=22';
 
 const $ = (id) => document.getElementById(id);
 
+const progressService = createProgressService(createFirebaseSessionGateway());
+const settingsStore = createLocalSettingsStore();
+const audio = createWebAudioAdapter();
+
 let currentPlay = null;
 let currentGuide = null;
-let settings = loadSettings();
-setSettings(settings);
+const settings = settingsStore.load();
+audio.setSettings(settings);
 
-// Unlock Web Audio on first user interaction
-window.addEventListener('pointerdown', () => unlock(), { once: true });
+window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 window.addEventListener('resize', fitStage);
 fitStage();
 
@@ -37,7 +41,6 @@ function startStage(stageId) {
   }
   const bus = new Emitter();
 
-  // keep switcher button active state synced
   for (const b of document.querySelectorAll('[data-start-stage]')) {
     b.classList.toggle('active', b.dataset.startStage === stage.id);
   }
@@ -51,7 +54,8 @@ function startStage(stageId) {
 
   currentPlay = new Play(stage, {
     bus,
-    profile: getProfile(),
+    profile: progressService.getProfile(),
+    audio,
     onEnd: (summary) => handleStageEnd(summary),
   });
   currentPlay.start();
@@ -73,8 +77,7 @@ async function handleStageEnd(summary) {
   const primary = $('pg-primary');
 
   if (summary.stageId === 'tutorial') {
-    const updated = applyTutorialDone(getProfile());
-    await saveProgress(updated);
+    await progressService.completeTutorial();
     title.textContent = "You're Ready!";
     body.textContent = 'Tutorial (Level 0) complete! You now know how to read the Taripa, give exact change, protect your hearts, and follow the route progress bar.';
     stats.hidden = true;
@@ -82,8 +85,7 @@ async function handleStageEnd(summary) {
     primary.onclick = () => startStage('level1');
   } else if (summary.stageId.startsWith('endless-')) {
     const diff = summary.stageId.slice(8);
-    const res = applyEndlessResult(getProfile(), diff, summary.score);
-    await saveProgress(res.profile);
+    const res = await progressService.recordEndlessRun(diff, summary.score);
     title.textContent = 'Game Over (Endless Mode)';
     const dayText = `Reached Day ${summary.day || 1}`;
     body.textContent = `${dayText} • Stars Earned: ★ ${res.starsAfter} / 3${res.newBest ? ' (New High Score!)' : ''}`;
@@ -94,8 +96,7 @@ async function handleStageEnd(summary) {
     primary.onclick = () => startStage(summary.stageId);
   } else if (summary.outcome === 'complete') {
     const lvlIdx = LEVEL_ORDER.indexOf(summary.stageId);
-    const updated = applyLevelComplete(getProfile(), Math.max(0, lvlIdx));
-    await saveProgress(updated);
+    await progressService.completeLevel(Math.max(0, lvlIdx));
     const nextStageId = STAGES[summary.stageId]?.next;
     stats.hidden = false;
     $('pg-score').textContent = summary.score;
@@ -127,49 +128,48 @@ async function handleStageEnd(summary) {
 
 // Menu & settings bindings
 $('btn-menu').onclick = () => {
-  sfx('tap');
+  audio.sfx('tap');
   setAnimationsFrozen(true);
   $('modal-menu').hidden = false;
 };
 $('menu-close').onclick = () => {
-  sfx('tap');
+  audio.sfx('tap');
   $('modal-menu').hidden = true;
   setAnimationsFrozen(false);
 };
 $('pg-menu').onclick = () => {
-  sfx('tap');
+  audio.sfx('tap');
   location.href = './login.html?section=menu';
 };
 
 for (const b of document.querySelectorAll('[data-start-stage]')) {
   b.onclick = () => {
-    sfx('tap');
+    audio.sfx('tap');
     startStage(b.dataset.startStage);
   };
 }
 
-// Settings controls
 $('set-volume').value = Math.round(settings.volume * 100);
 $('set-sfx').checked = !!settings.sfx;
 $('version-label').textContent = `v${VERSION}`;
 
 $('set-volume').oninput = (e) => {
   settings.volume = Number(e.target.value) / 100;
-  setSettings(settings);
-  saveSettings(settings);
+  audio.setSettings(settings);
+  settingsStore.save(settings);
 };
 $('set-sfx').onchange = (e) => {
   settings.sfx = e.target.checked;
-  setSettings(settings);
-  saveSettings(settings);
-  if (settings.sfx) sfx('tap');
+  audio.setSettings(settings);
+  settingsStore.save(settings);
+  if (settings.sfx) audio.sfx('tap');
 };
 
 // Boot: load profile (or guest mode) and launch requested stage
 (async function boot() {
   const urlStage = new URLSearchParams(location.search).get('stage');
-  await initProgress();
-  const st = getState();
+  await progressService.init();
+  const st = progressService.getState();
   $('account-badge').textContent = st.uid
     ? `Player: ${st.profile.nickname}`
     : 'Guest Mode (progress not saved online)';

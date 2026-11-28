@@ -1,4 +1,4 @@
-// Settings are saved on the device (localStorage), not the account.
+// Infrastructure Layer: SettingsStore adapter backed by localStorage.
 const KEY = 'tsuperhero.settings';
 const DEFAULTS = { volume: 0.8, sfx: true };
 
@@ -6,7 +6,7 @@ export function loadSettings() {
   try {
     return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
   } catch {
-    return { ...DEFAULTS }; // storage blocked or corrupted: use defaults
+    return { ...DEFAULTS };
   }
 }
 
@@ -17,4 +17,8 @@ export function saveSettings(settings) {
   } catch {
     return false;
   }
+}
+
+export function createLocalSettingsStore() {
+  return { load: loadSettings, save: saveSettings };
 }

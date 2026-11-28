@@ -1,4 +1,6 @@
-// Tiny event bus: play.js emits ('change' | 'submit' | 'answer' | 'drawer' | 'stop'), tutorial listens.
+// Application Layer: Tiny in-memory event bus.
+// Play emits ('change' | 'submit' | 'answer' | 'drawer' | 'stop'), Tutorial listens.
+
 export class Emitter {
   constructor() { this.handlers = new Set(); }
   on(fn) { this.handlers.add(fn); return () => this.handlers.delete(fn); }

@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, ROUTES, ENDLESS_STOPS, DENOMS, MAX_PAYMENT, LEVEL_ORDER, getStage } from '../js/game/data.js';
-import { mulberry32, validateRoute, fareOf, upcomingStops, makePassenger, fixedPassenger, jumbleRoute } from '../js/game/logic.js';
-import { createRun } from '../js/game/session.js';
-import { breakdown } from '../js/game/money.js';
-import { pesoWord, amountWord } from '../js/game/numbers.js';
+import { STAGES, ROUTES, ENDLESS_STOPS, DENOMS, MAX_PAYMENT, LEVEL_ORDER, getStage } from '../js/domain/data.js';
+import { mulberry32, validateRoute, fareOf, upcomingStops, makePassenger, fixedPassenger, jumbleRoute } from '../js/domain/logic.js';
+import { createRun } from '../js/application/session.js';
+import { breakdown } from '../js/domain/money.js';
+import { pesoWord, amountWord } from '../js/domain/numbers.js';
 
 const ALL_STAGES = ['tutorial', ...LEVEL_ORDER, 'endless-easy', 'endless-medium', 'endless-hard'];
 const denomsFor = (stage) => DENOMS.filter((d) => stage.centavos || !d.centavo).map((d) => d.value);

@@ -1,4 +1,6 @@
-// Player profile shape. No Firebase imports here, so the game can use it offline.
+// Domain Layer: Player Profile entity & normalization.
+// Zero external dependencies (no DOM, no Firebase, no storage).
+
 export function defaultProfile(nickname) {
   return {
     nickname,
@@ -18,8 +20,8 @@ export function normalizeProfile(data, nickname) {
   return {
     ...base,
     ...data,
-    bestScore: { ...base.bestScore, ...(data.bestScore || {}) },
-    equipped: { ...base.equipped, ...(data.equipped || {}) },
-    unlocked: Array.isArray(data.unlocked) ? data.unlocked : base.unlocked,
+    bestScore: { ...base.bestScore, ...(data?.bestScore || {}) },
+    equipped: { ...base.equipped, ...(data?.equipped || {}) },
+    unlocked: Array.isArray(data?.unlocked) ? data.unlocked : base.unlocked,
   };
 }

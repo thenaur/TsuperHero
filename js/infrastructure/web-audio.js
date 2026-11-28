@@ -1,6 +1,5 @@
-// Placeholder sound effects made with Web Audio (no files needed yet).
-// When real MP3/OGG files are ready, replace SOUNDS with Audio objects and add music here.
-// Browsers only allow audio after the first tap/click, so unlock() is called on pointerdown.
+// Infrastructure Layer: AudioAdapter backed by Web Audio API.
+// Placeholder synth SFX until real MP3/OGG files are wired in.
 let ctx = null;
 let S = { volume: 0.8, sfx: true };
 
@@ -11,7 +10,6 @@ export function unlock() {
     if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === 'suspended') ctx.resume();
   } catch { /* audio not supported */ }
-  // TODO: start background music here on the first tap (follow S.volume).
 }
 
 function tone(freq, start, dur, type = 'square', gain = 0.12) {
@@ -38,4 +36,8 @@ const SOUNDS = {
 export function sfx(name) {
   if (!ctx || !S.sfx || S.volume <= 0) return;
   try { SOUNDS[name]?.(); } catch { /* ignore */ }
+}
+
+export function createWebAudioAdapter() {
+  return { unlock, setSettings, sfx };
 }
